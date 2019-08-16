@@ -153,5 +153,8 @@ admin_port = 7400
 4. Challenge image requirement
 - Support set flag by setting docker environment "FLAG".
 
+5. The configuration I have set on the CTFd admin panel.
+![https://www.zhaoj.in/wp-content/uploads/2019/08/1565931400faa3a335e9a8531e8e34cdb1e5ede899.png](https://www.zhaoj.in/wp-content/uploads/2019/08/1565931400faa3a335e9a8531e8e34cdb1e5ede899.png)
+
 ## Demo
 [BUUCTF](https://buuoj.cn)
