@@ -1,6 +1,12 @@
 # CTFd-Whale
 Plugins for CTFd which allow your users to launch a standalone instance for challenges.
 
+![https://www.zhaoj.in/wp-content/uploads/2019/08/1565947849bb2f3ed7912fb85afbbf3e6135cb89ca.png](https://www.zhaoj.in/wp-content/uploads/2019/08/1565947849bb2f3ed7912fb85afbbf3e6135cb89ca.png)
+
+![https://www.zhaoj.in/wp-content/uploads/2019/08/15659478989e90e7a3437b1bdd5b9e617d7071a79f.png](https://www.zhaoj.in/wp-content/uploads/2019/08/15659478989e90e7a3437b1bdd5b9e617d7071a79f.png)
+
+![https://www.zhaoj.in/wp-content/uploads/2019/08/15659479342f5f6d33e2eeaedb313facd77b2bbccb.png](https://www.zhaoj.in/wp-content/uploads/2019/08/15659479342f5f6d33e2eeaedb313facd77b2bbccb.png)
+
 ![https://www.zhaoj.in/wp-content/uploads/2019/08/1565923903609e6c236759a5663be8e0fb57904482.png](https://www.zhaoj.in/wp-content/uploads/2019/08/1565923903609e6c236759a5663be8e0fb57904482.png)
 
 ## Features
