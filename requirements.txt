@@ -1,0 +1,2 @@
+docker==4.0.2
+Flask-APScheduler==1.11.0
