@@ -18,14 +18,18 @@ class DockerUtils:
                               mem_limit=dynamic_docker_challenge.memory_limit)
 
     @staticmethod
-    def remove_current_docker_container(user_id):
+    def remove_current_docker_container(user_id, is_retry = False):
         configs = DBUtils.get_all_configs()
-        container = DBUtils.get_current_container(user_id=user_id)
+        container = DBUtils.get_current_containers(user_id=user_id)
 
         if container is None:
             return
 
-        client = docker.DockerClient(base_url=configs.get("docker_api_url"))
-        containers = client.containers.list(filters={'name': str(user_id) + '-' + container.uuid})
-        for c in containers:
-            c.remove(force=True)
+        try:
+            client = docker.DockerClient(base_url=configs.get("docker_api_url"))
+            containers = client.containers.list(filters={'name': str(user_id) + '-' + container.uuid})
+            for c in containers:
+                c.remove(force=True)
+        except:
+            if not is_retry:
+                DockerUtils.remove_current_docker_container(user_id, True)

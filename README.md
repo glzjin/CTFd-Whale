@@ -1,5 +1,5 @@
 # CTFd-Whale
-Plugins for CTFd which allow your users to launch a standalone instance for challenges.
+A plugin for CTFd which allow your users to launch a standalone instance for challenges.
 
 ![https://www.zhaoj.in/wp-content/uploads/2019/08/1565947849bb2f3ed7912fb85afbbf3e6135cb89ca.png](https://www.zhaoj.in/wp-content/uploads/2019/08/1565947849bb2f3ed7912fb85afbbf3e6135cb89ca.png)
 

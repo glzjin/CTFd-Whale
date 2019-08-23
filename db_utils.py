@@ -46,7 +46,7 @@ class DBUtils:
         return str(uuid_code)
 
     @staticmethod
-    def get_current_container(user_id):
+    def get_current_containers(user_id):
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.user_id == user_id)
         records = q.all()

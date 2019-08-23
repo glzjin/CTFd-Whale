@@ -128,7 +128,7 @@ def load(app):
         user_id = current_user.get_current_user().id
         challenge_id = request.args.get('challenge_id')
         ControlUtil.check_challenge(challenge_id)
-        data = DBUtils.get_current_container(user_id=user_id)
+        data = DBUtils.get_current_containers(user_id=user_id)
         configs = DBUtils.get_all_configs()
         domain = configs.get('frp_http_domain_suffix', "")
         if data is not None:
@@ -168,7 +168,7 @@ def load(app):
         challenge_id = request.args.get('challenge_id')
         ControlUtil.check_challenge(challenge_id)
         docker_max_renew_count = int(configs.get("docker_max_renew_count"))
-        container = DBUtils.get_current_container(user_id)
+        container = DBUtils.get_current_containers(user_id)
         if container.renew_count >= docker_max_renew_count:
             return json.dumps({'success': False, 'msg': 'Max renewal times exceed.'})
         DBUtils.renew_current_container(user_id=user_id, challenge_id=challenge_id)
