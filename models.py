@@ -272,6 +272,7 @@ class DynamicDockerChallenge(Challenges):
     minimum = db.Column(db.Integer, default=0)
     decay = db.Column(db.Integer, default=0)
     memory_limit = db.Column(db.Text, default="128m")
+    cpu_limit = db.Column(db.Float, default=0.5)
     dynamic_score = db.Column(db.Integer, default=0)
 
     docker_image = db.Column(db.Text, default=0)
