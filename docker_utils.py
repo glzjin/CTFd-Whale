@@ -50,7 +50,7 @@ class DockerUtils:
                                           mem_limit=dynamic_docker_challenge.memory_limit,
                                           nano_cpus=int(dynamic_docker_challenge.cpu_limit * 1e9),
                                           labels={str(user_id) + '-' + uuid_code: str(user_id) + '-' + uuid_code},
-                                          hostname=name, auto_remove=True)
+                                          hostname=name, auto_remove=True, pids_limit=200)
                     network.disconnect(container_name)
                     network.connect(container_name, aliases=[name])
                     has_processed_main = True
@@ -63,7 +63,7 @@ class DockerUtils:
                                       mem_limit=dynamic_docker_challenge.memory_limit,
                                       nano_cpus=int(dynamic_docker_challenge.cpu_limit * 1e9),
                                       labels={str(user_id) + '-' + uuid_code: str(user_id) + '-' + uuid_code},
-                                      hostname=name, auto_remove=True)
+                                      hostname=name, auto_remove=True, pids_limit=200)
                 network.disconnect(container_name)
                 network.connect(container_name, aliases=[name])
 
@@ -71,7 +71,8 @@ class DockerUtils:
             client.containers.run(image=dynamic_docker_challenge.docker_image, name=str(user_id) + '-' + uuid_code,
                                   environment={'FLAG': flag}, detach=True, network="ctfd_frp-containers",
                                   mem_limit=dynamic_docker_challenge.memory_limit,
-                                  nano_cpus=int(dynamic_docker_challenge.cpu_limit * 1e9), auto_remove=True)
+                                  nano_cpus=int(dynamic_docker_challenge.cpu_limit * 1e9), auto_remove=True,
+                                  pids_limit=200)
 
     @staticmethod
     def remove_current_docker_container(user_id, is_retry=False):
