@@ -69,9 +69,9 @@ class DBUtils:
     def remove_current_container(user_id):
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.user_id == user_id)
-        records = q.all()
-        for r in records:
-            pass
+        # records = q.all()
+        # for r in records:
+        #     pass
 
         q.delete()
         db.session.commit()

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2019-09-13
+
+- Refine removal.
+
 ## 2019-08-29
 
 - Add CPU usage limit.

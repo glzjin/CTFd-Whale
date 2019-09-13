@@ -82,7 +82,7 @@ class DockerUtils:
         auto_containers = configs.get("docker_auto_connect_containers", "").split(",")
 
         if container is None:
-            return
+            return False
 
         try:
             client = docker.DockerClient(base_url=configs.get("docker_api_url"))
@@ -91,18 +91,18 @@ class DockerUtils:
             if len(networks) == 0:
                 containers = client.containers.list(filters={'name': str(user_id) + '-' + container.uuid})
                 for c in containers:
-                    c.remove(force=True)
+                    c.remove(v=True, force=True)
             else:
                 containers = client.containers.list(filters={'label': str(user_id) + '-' + container.uuid})
                 for c in containers:
-                    c.remove(force=True)
+                    c.remove(v=True, force=True)
 
                 for n in networks:
                     for ac in auto_containers:
                         n.disconnect(ac)
                     n.remove()
-
-
         except:
             if not is_retry:
                 DockerUtils.remove_current_docker_container(user_id, True)
+
+        return True

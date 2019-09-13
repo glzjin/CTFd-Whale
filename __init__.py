@@ -154,8 +154,10 @@ def load(app):
             return json.dumps({'success': False, 'msg': 'Frequency limit, You should wait at least 1 min.'})
 
         user_id = current_user.get_current_user().id
-        ControlUtil.remove_container(user_id)
-        return json.dumps({'success': True})
+        if ControlUtil.remove_container(user_id):
+            return json.dumps({'success': True})
+        else:
+            return json.dumps({'success': False, 'msg': 'Failed when destroy instance, please contact admin!'})
 
     @page_blueprint.route('/container', methods=['PATCH'])
     @authed_only
@@ -169,6 +171,8 @@ def load(app):
         ControlUtil.check_challenge(challenge_id)
         docker_max_renew_count = int(configs.get("docker_max_renew_count"))
         container = DBUtils.get_current_containers(user_id)
+        if container is None:
+            return json.dumps({'success': False, 'msg': 'Instance not found.'})
         if container.renew_count >= docker_max_renew_count:
             return json.dumps({'success': False, 'msg': 'Max renewal times exceed.'})
         DBUtils.renew_current_container(user_id=user_id, challenge_id=challenge_id)

@@ -15,8 +15,11 @@ class ControlUtil:
 
     @staticmethod
     def remove_container(user_id):
-        DockerUtils.remove_current_docker_container(user_id)
-        DBUtils.remove_current_container(user_id)
+        docker_result = DockerUtils.remove_current_docker_container(user_id)
+        if docker_result:
+            DBUtils.remove_current_container(user_id)
+
+        return docker_result
 
     @staticmethod
     def check_challenge(challenge_id):
