@@ -26,28 +26,28 @@ def load(app):
         app, base_path="/plugins/ctfd-whale/assets/"
     )
 
-    page_admin_blueprint = Blueprint(
-        "ctfd-whale-admin-page",
+    page_blueprint = Blueprint(
+        "ctfd-whale",
         __name__,
         template_folder="templates",
         static_folder="assets",
-        url_prefix="/admin/plugins/ctfd-whale"
+        url_prefix="/plugins/ctfd-whale"
     )
 
-    @page_admin_blueprint.route('/settings', methods=['GET'])
+    @page_blueprint.route('/admin/settings', methods=['GET'])
     @admins_only
     def admin_list_configs():
         configs = DBUtils.get_all_configs()
         return render_template('config.html', configs=configs)
 
-    @page_admin_blueprint.route('/settings', methods=['PATCH'])
+    @page_blueprint.route('/admin/settings', methods=['PATCH'])
     @admins_only
     def admin_save_configs():
         req = request.get_json()
         DBUtils.save_all_configs(req.items())
         return json.dumps({'success': True})
 
-    @page_admin_blueprint.route("/containers", methods=['GET'])
+    @page_blueprint.route("/admin/containers", methods=['GET'])
     @admins_only
     def admin_list_containers():
         configs = DBUtils.get_all_configs()
@@ -63,30 +63,20 @@ def load(app):
         return render_template("containers.html", containers=containers, pages=pages, curr_page=page,
                                curr_page_start=page_start, configs=configs)
 
-    @page_admin_blueprint.route("/containers", methods=['DELETE'])
+    @page_blueprint.route("/admin/containers", methods=['DELETE'])
     @admins_only
     def admin_delete_container():
         user_id = request.args.get('user_id')
         ControlUtil.remove_container(user_id)
         return json.dumps({'success': True})
 
-    @page_admin_blueprint.route("/containers", methods=['PATCH'])
+    @page_blueprint.route("/admin/containers", methods=['PATCH'])
     @admins_only
     def admin_renew_container():
         user_id = request.args.get('user_id')
         challenge_id = request.args.get('challenge_id')
         DBUtils.renew_current_container(user_id=user_id, challenge_id=challenge_id)
         return json.dumps({'success': True})
-
-    app.register_blueprint(page_admin_blueprint)
-
-    page_blueprint = Blueprint(
-        "ctfd-whale-page",
-        __name__,
-        template_folder="templates",
-        static_folder="assets",
-        url_prefix="/plugins/ctfd-whale"
-    )
 
     @page_blueprint.route('/container', methods=['POST'])
     @authed_only
@@ -97,7 +87,7 @@ def load(app):
         user_id = current_user.get_current_user().id
         ControlUtil.remove_container(user_id)
         challenge_id = request.args.get('challenge_id')
-        ControlUtil.check_challenge(challenge_id)
+        ControlUtil.check_challenge(challenge_id, user_id)
 
         configs = DBUtils.get_all_configs()
         current_count = DBUtils.get_all_alive_container_count()
@@ -127,7 +117,7 @@ def load(app):
     def list_container():
         user_id = current_user.get_current_user().id
         challenge_id = request.args.get('challenge_id')
-        ControlUtil.check_challenge(challenge_id)
+        ControlUtil.check_challenge(challenge_id, user_id)
         data = DBUtils.get_current_containers(user_id=user_id)
         configs = DBUtils.get_all_configs()
         domain = configs.get('frp_http_domain_suffix', "")
@@ -168,7 +158,7 @@ def load(app):
         configs = DBUtils.get_all_configs()
         user_id = current_user.get_current_user().id
         challenge_id = request.args.get('challenge_id')
-        ControlUtil.check_challenge(challenge_id)
+        ControlUtil.check_challenge(challenge_id, user_id)
         docker_max_renew_count = int(configs.get("docker_max_renew_count"))
         container = DBUtils.get_current_containers(user_id)
         if container is None:

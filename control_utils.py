@@ -1,6 +1,6 @@
 import time
 
-from CTFd.models import Challenges
+from CTFd.models import Challenges, Users
 from .db_utils import DBUtils
 from .docker_utils import DockerUtils
 from sqlalchemy.sql import and_
@@ -22,11 +22,18 @@ class ControlUtil:
         return docker_result
 
     @staticmethod
-    def check_challenge(challenge_id):
-        Challenges.query.filter(
-            Challenges.id == challenge_id,
-            and_(Challenges.state != "hidden", Challenges.state != "locked"),
-        ).first_or_404()
+    def check_challenge(challenge_id, user_id):
+        user = Users.query.filter_by(id=user_id).first()
+
+        if user.type == "admin":
+            Challenges.query.filter(
+                Challenges.id == challenge_id
+            ).first_or_404()
+        else:
+            Challenges.query.filter(
+                Challenges.id == challenge_id,
+                and_(Challenges.state != "hidden", Challenges.state != "locked"),
+            ).first_or_404()
 
     @staticmethod
     def frequency_limit():

@@ -1,4 +1,4 @@
 {
     "name": "CTFd Whale",
-    "route": "/admin/plugins/ctfd-whale/settings"
+    "route": "/plugins/ctfd-whale/admin/settings"
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2019-09-14
+
+- Refine plugin path.
+
 ## 2019-09-13
 
 - Refine removal.
