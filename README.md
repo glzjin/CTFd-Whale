@@ -16,7 +16,7 @@ A plugin for CTFd which allow your users to launch a standalone instance for cha
 - Admin can manage the instance at the admin panel.
 
 ## Usage
-1. Copy this folder to your ctfd plugins folder.
+1. Copy this folder to your ctfd plugins folder. *Make sure the folder name is 'ctfd-whale'.*
 2. Deploy [frp](https://github.com/fatedier/frp/) on your servers, and you should make sure CTFd can access frpc admin API directly.
 3. And also make sure docker API is accessible to CTFd, you should create a network in docker called 'ctfd_frp-containers' which allow frp redirect traffic to challenge instances.
 4. Configure this plugin on the admin panel.
