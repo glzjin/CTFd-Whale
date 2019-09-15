@@ -164,3 +164,5 @@ admin_port = 7400
 
 ## Demo
 [BUUCTF](https://buuoj.cn)
+## 在本地运行独立靶机
+[guide](DeployLocal.md)
