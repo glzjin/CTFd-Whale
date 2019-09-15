@@ -111,6 +111,26 @@
 			<input type="text" class="form-control" id="docker-auto-connect-containers" name="docker_auto_connect_containers" value="{{ configs.get("docker_auto_connect_containers") }}">
 		</div>
 
+        <div class="form-group">
+			<label>
+				Docker Auto Connect Network
+				<small class="form-text text-muted">
+					Decide which network will be connected for single-container.
+				</small>
+			</label>
+			<input type="text" class="form-control" id="docker-auto-connect-network" name="docker_auto_connect_network" value="{{ configs.get("docker_auto_connect_network") }}">
+		</div>
+
+        <div class="form-group">
+			<label>
+				Docker Dns Setting
+				<small class="form-text text-muted">
+					Decide which dns will be used in container network.
+				</small>
+			</label>
+			<input type="text" class="form-control" id="docker-dns" name="docker_dns" value="{{ configs.get("docker_dns") }}">
+		</div>
+
 		<button type="submit" class="btn btn-md btn-primary float-right">Update</button>
 	</form>
 </div>

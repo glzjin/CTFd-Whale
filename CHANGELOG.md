@@ -1,5 +1,13 @@
 # Changelog
 
+## 2019-09-15
+
+- Add Container Network Setting and DNS Setting.
+
+Now You can setup a DNS Server in your Container Network.
+- For single-instance network, Just connect your dns server to it and input the ip address in the seeting panel.
+- For multi-instance network, You should rename the dns server to a name include "dns", than add it to auto connect instance. It will be used as a dns server.
+
 ## 2019-09-14
 
 - Refine plugin path.

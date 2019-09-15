@@ -17,6 +17,8 @@ class DockerUtils:
             .filter(DynamicDockerChallenge.id == challenge_id) \
             .first_or_404()
 
+        dns = configs.get("docker_dns", "").split(",")
+
         client = docker.DockerClient(base_url=configs.get("docker_api_url"))
         if dynamic_docker_challenge.docker_image.startswith("{"):
             images = json.loads(dynamic_docker_challenge.docker_image, object_pairs_hook=OrderedDict)
@@ -36,9 +38,16 @@ class DockerUtils:
             network = client.networks.create(network_name, internal=True, ipam=ipam_config,
                                              labels={range_prefix: range_prefix})
 
+            dns = []
+            end_ip = 250
             containers = configs.get("docker_auto_connect_containers", "").split(",")
             for c in containers:
-                network.connect(c)
+                if c.find("dns") != -1:
+                    network.connect(c, ipv4_address=range_prefix + "." + str(end_ip))
+                    dns.append(range_prefix + "." + str(end_ip))
+                    end_ip += 1
+                else:
+                    network.connect(c)
 
             has_processed_main = False
             for name in images:
@@ -46,7 +55,7 @@ class DockerUtils:
                     image = images[name]
                     container_name = str(user_id) + '-' + uuid_code
                     client.containers.run(image=image, name=container_name, network=network_name,
-                                          environment={'FLAG': flag}, detach=True,
+                                          environment={'FLAG': flag}, detach=True, dns=dns,
                                           mem_limit=dynamic_docker_challenge.memory_limit,
                                           nano_cpus=int(dynamic_docker_challenge.cpu_limit * 1e9),
                                           labels={str(user_id) + '-' + uuid_code: str(user_id) + '-' + uuid_code},
@@ -59,7 +68,7 @@ class DockerUtils:
                 image = images[name]
                 container_name = str(user_id) + '-' + str(uuid.uuid4())
                 client.containers.run(image=image, name=container_name, network=network_name,
-                                      environment={'FLAG': flag}, detach=True,
+                                      environment={'FLAG': flag}, detach=True, dns=dns,
                                       mem_limit=dynamic_docker_challenge.memory_limit,
                                       nano_cpus=int(dynamic_docker_challenge.cpu_limit * 1e9),
                                       labels={str(user_id) + '-' + uuid_code: str(user_id) + '-' + uuid_code},
@@ -69,7 +78,8 @@ class DockerUtils:
 
         else:
             client.containers.run(image=dynamic_docker_challenge.docker_image, name=str(user_id) + '-' + uuid_code,
-                                  environment={'FLAG': flag}, detach=True, network="ctfd_frp-containers",
+                                  environment={'FLAG': flag}, detach=True, dns=dns,
+                                  network=configs.get("docker_auto_connect_network", "ctfd_frp-containers"),
                                   mem_limit=dynamic_docker_challenge.memory_limit,
                                   nano_cpus=int(dynamic_docker_challenge.cpu_limit * 1e9), auto_remove=True,
                                   pids_limit=200)
