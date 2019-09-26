@@ -1,5 +1,11 @@
 # Changelog
 
+## 2019-09-26
+
+- Add frp http port setting.
+
+You should config it at the settings for http redirect.
+
 ## 2019-09-15
 
 - Add Container Network Setting and DNS Setting.

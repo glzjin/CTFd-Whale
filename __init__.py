@@ -128,8 +128,12 @@ def load(app):
                 .filter(DynamicDockerChallenge.id == data.challenge_id) \
                 .first_or_404()
             if dynamic_docker_challenge.redirect_type == "http":
-                return json.dumps({'success': True, 'type': 'http', 'domain': data.uuid + domain,
-                                   'remaining_time': 3600 - (datetime.now() - data.start_time).seconds})
+                if int(configs.get('frp_http_port', "80")) == 80:
+                    return json.dumps({'success': True, 'type': 'http', 'domain': data.uuid + domain,
+                                       'remaining_time': 3600 - (datetime.now() - data.start_time).seconds})
+                else:
+                    return json.dumps({'success': True, 'type': 'http', 'domain': data.uuid + domain + ":" + configs.get('frp_http_port', "80"),
+                                       'remaining_time': 3600 - (datetime.now() - data.start_time).seconds})
             else:
                 return json.dumps({'success': True, 'type': 'redirect', 'ip': configs.get('frp_direct_ip_address', ""),
                                    'port': data.port,

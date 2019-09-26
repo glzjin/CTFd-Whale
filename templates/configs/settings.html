@@ -43,6 +43,16 @@
 
         <div class="form-group">
 			<label>
+				Frp Http Port
+				<small class="form-text text-muted">
+					For http redirect
+				</small>
+			</label>
+			<input type="number" class="form-control" id="frp-http-port" name="frp_http_port" value="{{ configs.get("frp_http_port") }}">
+		</div>
+
+        <div class="form-group">
+			<label>
 				Frp Direct IP Address
 				<small class="form-text text-muted">
 					For direct redirect
