@@ -1,5 +1,6 @@
 from __future__ import division  # Use floating point for math calculations
 
+import fcntl
 import json
 import random
 import uuid
@@ -14,6 +15,7 @@ from CTFd.utils import user as current_user
 from CTFd.utils.decorators import admins_only, authed_only
 from .control_utils import ControlUtil
 from .db_utils import DBUtils
+from .lock_utils import LockUtils
 from .frp_utils import FrpUtils
 from .models import DynamicDockerChallenge, DynamicValueDockerChallenge
 
@@ -81,10 +83,14 @@ def load(app):
     @page_blueprint.route('/container', methods=['POST'])
     @authed_only
     def add_container():
+        user_id = current_user.get_current_user().id
+
+        if not LockUtils.acquire_lock(user_id):
+            return json.dumps({'success': False, 'msg': 'Request Too Fast!'})
+
         if ControlUtil.frequency_limit():
             return json.dumps({'success': False, 'msg': 'Frequency limit, You should wait at least 1 min.'})
 
-        user_id = current_user.get_current_user().id
         ControlUtil.remove_container(user_id)
         challenge_id = request.args.get('challenge_id')
         ControlUtil.check_challenge(challenge_id, user_id)
@@ -110,6 +116,7 @@ def load(app):
                                       int(configs.get("frp_direct_port_maximum")))
             ControlUtil.add_container(user_id=user_id, challenge_id=challenge_id, flag=flag, port=port)
 
+        LockUtils.release_lock(user_id)
         return json.dumps({'success': True})
 
     @page_blueprint.route('/container', methods=['GET'])
@@ -132,7 +139,8 @@ def load(app):
                     return json.dumps({'success': True, 'type': 'http', 'domain': data.uuid + domain,
                                        'remaining_time': 3600 - (datetime.now() - data.start_time).seconds})
                 else:
-                    return json.dumps({'success': True, 'type': 'http', 'domain': data.uuid + domain + ":" + configs.get('frp_http_port', "80"),
+                    return json.dumps({'success': True, 'type': 'http',
+                                       'domain': data.uuid + domain + ":" + configs.get('frp_http_port', "80"),
                                        'remaining_time': 3600 - (datetime.now() - data.start_time).seconds})
             else:
                 return json.dumps({'success': True, 'type': 'redirect', 'ip': configs.get('frp_direct_ip_address', ""),
@@ -144,11 +152,16 @@ def load(app):
     @page_blueprint.route('/container', methods=['DELETE'])
     @authed_only
     def remove_container():
+        user_id = current_user.get_current_user().id
+        if not LockUtils.acquire_lock(user_id):
+            return json.dumps({'success': False, 'msg': 'Request Too Fast!'})
+
         if ControlUtil.frequency_limit():
             return json.dumps({'success': False, 'msg': 'Frequency limit, You should wait at least 1 min.'})
 
-        user_id = current_user.get_current_user().id
         if ControlUtil.remove_container(user_id):
+            LockUtils.release_lock(user_id)
+
             return json.dumps({'success': True})
         else:
             return json.dumps({'success': False, 'msg': 'Failed when destroy instance, please contact admin!'})
@@ -156,11 +169,14 @@ def load(app):
     @page_blueprint.route('/container', methods=['PATCH'])
     @authed_only
     def renew_container():
+        user_id = current_user.get_current_user().id
+        if not LockUtils.acquire_lock(user_id):
+            return json.dumps({'success': False, 'msg': 'Request Too Fast!'})
+
         if ControlUtil.frequency_limit():
             return json.dumps({'success': False, 'msg': 'Frequency limit, You should wait at least 1 min.'})
 
         configs = DBUtils.get_all_configs()
-        user_id = current_user.get_current_user().id
         challenge_id = request.args.get('challenge_id')
         ControlUtil.check_challenge(challenge_id, user_id)
         docker_max_renew_count = int(configs.get("docker_max_renew_count"))
@@ -170,6 +186,7 @@ def load(app):
         if container.renew_count >= docker_max_renew_count:
             return json.dumps({'success': False, 'msg': 'Max renewal times exceed.'})
         DBUtils.renew_current_container(user_id=user_id, challenge_id=challenge_id)
+        LockUtils.release_lock(user_id)
         return json.dumps({'success': True})
 
     def auto_clean_container():
@@ -182,7 +199,15 @@ def load(app):
 
     app.register_blueprint(page_blueprint)
 
-    scheduler = APScheduler()
-    scheduler.init_app(app)
-    scheduler.start()
-    scheduler.add_job(id='whale-auto-clean', func=auto_clean_container, trigger="interval", seconds=10)
+    try:
+        lock_file = open("/tmp/sanic.lock", "w")
+        lock_fd = lock_file.fileno()
+        fcntl.lockf(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+        scheduler = APScheduler()
+        scheduler.init_app(app)
+        scheduler.start()
+        scheduler.add_job(id='whale-auto-clean', func=auto_clean_container, trigger="interval", seconds=10)
+        print("[CTFd Whale]Started successfully")
+    except IOError:
+        pass

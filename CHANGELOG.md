@@ -1,5 +1,10 @@
 # Changelog
 
+## 2019-10-30
+
+- Optimize for multi worker.
+- Try to fix concurrency request problem.
+
 ## 2019-09-26
 
 - Add frp http port setting.
