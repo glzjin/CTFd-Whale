@@ -1,25 +1,29 @@
-from CTFd.cache import cache
+from flask_redis import FlaskRedis
+from redis.exceptions import LockError
 
 
 class LockUtils:
-    @staticmethod
-    def acquire_lock(user_id):
-        key = 'ctfd-whale-lock-' + str(user_id)
+    def __init__(self, app, user_id):
+        self.redis_client = FlaskRedis(app)
+        self.key = 'ctfd_whale_lock-' + str(user_id)
+        self.lock = None
 
-        if cache.get(key) is not None:
+    def acquire(self):
+        lock = self.redis_client.lock(name=self.key, timeout=10)
+
+        if not lock.acquire(blocking=True, blocking_timeout=0.5):
             return False
 
-        cache.set(key, '1', timeout=10)
-
+        self.lock = lock
         return True
 
-    @staticmethod
-    def release_lock(user_id):
-        key = 'ctfd-whale-lock-' + str(user_id)
-
-        if cache.get(key) is None:
+    def release(self):
+        if self.lock is None:
             return False
 
-        cache.delete(key)
+        try:
+            self.lock.release()
 
-        return True
+            return True
+        except LockError:
+            return False

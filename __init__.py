@@ -84,8 +84,9 @@ def load(app):
     @authed_only
     def add_container():
         user_id = current_user.get_current_user().id
+        lock_util = LockUtils(app=app, user_id=user_id)
 
-        if not LockUtils.acquire_lock(user_id):
+        if not lock_util.acquire():
             return json.dumps({'success': False, 'msg': 'Request Too Fast!'})
 
         if ControlUtil.frequency_limit():
@@ -116,7 +117,7 @@ def load(app):
                                       int(configs.get("frp_direct_port_maximum")))
             ControlUtil.add_container(user_id=user_id, challenge_id=challenge_id, flag=flag, port=port)
 
-        LockUtils.release_lock(user_id)
+        lock_util.release()
         return json.dumps({'success': True})
 
     @page_blueprint.route('/container', methods=['GET'])
@@ -153,14 +154,15 @@ def load(app):
     @authed_only
     def remove_container():
         user_id = current_user.get_current_user().id
-        if not LockUtils.acquire_lock(user_id):
+        lock_util = LockUtils(app=app, user_id=user_id)
+        if not lock_util.acquire():
             return json.dumps({'success': False, 'msg': 'Request Too Fast!'})
 
         if ControlUtil.frequency_limit():
             return json.dumps({'success': False, 'msg': 'Frequency limit, You should wait at least 1 min.'})
 
         if ControlUtil.remove_container(user_id):
-            LockUtils.release_lock(user_id)
+            lock_util.release()
 
             return json.dumps({'success': True})
         else:
@@ -170,7 +172,8 @@ def load(app):
     @authed_only
     def renew_container():
         user_id = current_user.get_current_user().id
-        if not LockUtils.acquire_lock(user_id):
+        lock_util = LockUtils(app=app, user_id=user_id)
+        if not lock_util.acquire():
             return json.dumps({'success': False, 'msg': 'Request Too Fast!'})
 
         if ControlUtil.frequency_limit():
@@ -186,7 +189,7 @@ def load(app):
         if container.renew_count >= docker_max_renew_count:
             return json.dumps({'success': False, 'msg': 'Max renewal times exceed.'})
         DBUtils.renew_current_container(user_id=user_id, challenge_id=challenge_id)
-        LockUtils.release_lock(user_id)
+        lock_util.release()
         return json.dumps({'success': True})
 
     def auto_clean_container():

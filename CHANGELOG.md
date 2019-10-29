@@ -5,6 +5,8 @@
 - Optimize for multi worker.
 - Try to fix concurrency request problem.
 
+Now You should set the redis with REDIS_HOST environment varible.
+
 ## 2019-09-26
 
 - Add frp http port setting.
