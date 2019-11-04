@@ -175,4 +175,5 @@ admin_port = 7400
 [BUUCTF](https://buuoj.cn)
 
 ## Third-Party Introduction
+- [CTFd-Whale 推荐部署实践](https://www.zhaoj.in/read-6333.html)
 - [手把手教你如何建立一个支持ctf动态独立靶机的靶场（ctfd+ctfd-whale)](https://blog.csdn.net/fjh1997/article/details/100850756)
