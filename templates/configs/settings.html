@@ -141,6 +141,16 @@
 			<input type="text" class="form-control" id="docker-dns" name="docker_dns" value="{{ configs.get("docker_dns") }}">
 		</div>
 
+        <div class="form-group">
+			<label>
+				Docker Swarm Nodes
+				<small class="form-text text-muted">
+					Will pick up one from it, You should set your node with label name=windows-* or name=linux-*. Separated by commas.
+				</small>
+			</label>
+			<input type="text" class="form-control" id="docker-swarm-nodes" name="docker_swarm_nodes" value="{{ configs.get("docker_swarm_nodes") }}">
+		</div>
+
 		<button type="submit" class="btn btn-md btn-primary float-right">Update</button>
 	</form>
 </div>

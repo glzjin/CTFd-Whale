@@ -18,6 +18,14 @@ class DockerUtils:
             .first_or_404()
 
         dns = configs.get("docker_dns", "").split(",")
+        nodes = configs.get("docker_swarm_nodes", "").split(",")
+        win_nodes = []
+        linux_nodes = []
+        for node in nodes:
+            if node.startswith("windows"):
+                win_nodes.append(node)
+            else:
+                linux_nodes.append(node)
 
         client = docker.DockerClient(base_url=configs.get("docker_api_url"))
         if dynamic_docker_challenge.docker_image.startswith("{"):
@@ -35,8 +43,8 @@ class DockerUtils:
             )
             ipam_config = docker.types.IPAMConfig(driver='default', pool_configs=[ipam_pool])
             network_name = str(user_id) + '-' + uuid_code
-            network = client.networks.create(network_name, internal=True, ipam=ipam_config,
-                                             labels={range_prefix: range_prefix})
+            network = client.networks.create(network_name, internal=True, ipam=ipam_config, attachable=True,
+                                             labels={range_prefix: range_prefix}, driver="overlay", scope="swarm")
 
             dns = []
             end_ip = 250
@@ -54,35 +62,78 @@ class DockerUtils:
                 if not has_processed_main:
                     image = images[name]
                     container_name = str(user_id) + '-' + uuid_code
-                    client.containers.run(image=image, name=container_name, network=network_name,
-                                          environment={'FLAG': flag}, detach=True, dns=dns,
-                                          mem_limit=dynamic_docker_challenge.memory_limit,
-                                          nano_cpus=int(dynamic_docker_challenge.cpu_limit * 1e9),
-                                          labels={str(user_id) + '-' + uuid_code: str(user_id) + '-' + uuid_code},
-                                          hostname=name, auto_remove=True, pids_limit=200)
-                    network.disconnect(container_name)
-                    network.connect(container_name, aliases=[name])
+
+                    node = DockerUtils.choose_node(image, win_nodes, linux_nodes)
+
+                    client.services.create(image=image, name=container_name, networks=[
+                        docker.types.NetworkAttachmentConfig(network_name, aliases=[name])],
+                                           env={'FLAG': flag}, dns_config=docker.types.DNSConfig(nameservers=dns),
+                                           resources=docker.types.Resources(
+                                               mem_limit=DockerUtils.convert_readable_text(
+                                                   dynamic_docker_challenge.memory_limit),
+                                               cpu_limit=int(
+                                                   dynamic_docker_challenge.cpu_limit * 1e9)),
+                                           labels={str(user_id) + '-' + uuid_code: str(user_id) + '-' + uuid_code},
+                                           hostname=name, constraints=['node.labels.name==' + node],
+                                           endpoint_spec=docker.types.EndpointSpec(mode='dnsrr', ports={}))
                     has_processed_main = True
                     continue
 
                 image = images[name]
                 container_name = str(user_id) + '-' + str(uuid.uuid4())
-                client.containers.run(image=image, name=container_name, network=network_name,
-                                      environment={'FLAG': flag}, detach=True, dns=dns,
-                                      mem_limit=dynamic_docker_challenge.memory_limit,
-                                      nano_cpus=int(dynamic_docker_challenge.cpu_limit * 1e9),
-                                      labels={str(user_id) + '-' + uuid_code: str(user_id) + '-' + uuid_code},
-                                      hostname=name, auto_remove=True, pids_limit=200)
-                network.disconnect(container_name)
-                network.connect(container_name, aliases=[name])
+                client.services.create(image=image, name=container_name, networks=[
+                    docker.types.NetworkAttachmentConfig(network_name, aliases=[name])],
+                                       env={'FLAG': flag}, dns_config=docker.types.DNSConfig(nameservers=dns),
+                                       resources=docker.types.Resources(mem_limit=DockerUtils.convert_readable_text(
+                                           dynamic_docker_challenge.memory_limit),
+                                           cpu_limit=int(
+                                               dynamic_docker_challenge.cpu_limit * 1e9)),
+                                       labels={str(user_id) + '-' + uuid_code: str(user_id) + '-' + uuid_code},
+                                       hostname=name, constraints=['node.labels.name==' + node],
+                                       endpoint_spec=docker.types.EndpointSpec(mode='dnsrr', ports={}))
 
         else:
-            client.containers.run(image=dynamic_docker_challenge.docker_image, name=str(user_id) + '-' + uuid_code,
-                                  environment={'FLAG': flag}, detach=True, dns=dns,
-                                  network=configs.get("docker_auto_connect_network", "ctfd_frp-containers"),
-                                  mem_limit=dynamic_docker_challenge.memory_limit,
-                                  nano_cpus=int(dynamic_docker_challenge.cpu_limit * 1e9), auto_remove=True,
-                                  pids_limit=200)
+            node = DockerUtils.choose_node(dynamic_docker_challenge.docker_image, win_nodes, linux_nodes)
+
+            client.services.create(image=dynamic_docker_challenge.docker_image, name=str(user_id) + '-' + uuid_code,
+                                   env={'FLAG': flag}, dns_config=docker.types.DNSConfig(nameservers=dns),
+                                   networks=[configs.get("docker_auto_connect_network", "ctfd_frp-containers")],
+                                   resources=docker.types.Resources(mem_limit=DockerUtils.convert_readable_text(
+                                       dynamic_docker_challenge.memory_limit),
+                                       cpu_limit=int(
+                                           dynamic_docker_challenge.cpu_limit * 1e9)),
+                                   constraints=['node.labels.name==' + node],
+                                   endpoint_spec=docker.types.EndpointSpec(mode='dnsrr', ports={}))
+
+    @staticmethod
+    def choose_node(image, win_nodes, linux_nodes):
+        is_win = False
+        image_split = image.split(":")
+        if len(image_split) > 1:
+            if image_split[1].startswith("windows"):
+                is_win = True
+
+        if is_win:
+            node = random.choice(win_nodes)
+        else:
+            node = random.choice(linux_nodes)
+
+        return node
+
+    @staticmethod
+    def convert_readable_text(text):
+        lower_text = text.lower()
+
+        if lower_text.endswith("k"):
+            return int(text[:-1]) * 1024
+
+        if lower_text.endswith("m"):
+            return int(text[:-1]) * 1024 * 1024
+
+        if lower_text.endswith("g"):
+            return int(text[:-1]) * 1024 * 1024 * 1024
+
+        return 0
 
     @staticmethod
     def remove_current_docker_container(user_id, is_retry=False):
@@ -99,13 +150,13 @@ class DockerUtils:
             networks = client.networks.list(names=[str(user_id) + '-' + container.uuid])
 
             if len(networks) == 0:
-                containers = client.containers.list(filters={'name': str(user_id) + '-' + container.uuid})
-                for c in containers:
-                    c.remove(v=True, force=True)
+                services = client.services.list(filters={'name': str(user_id) + '-' + container.uuid})
+                for s in services:
+                    s.remove()
             else:
-                containers = client.containers.list(filters={'label': str(user_id) + '-' + container.uuid})
-                for c in containers:
-                    c.remove(v=True, force=True)
+                services = client.services.list(filters={'label': str(user_id) + '-' + container.uuid})
+                for s in services:
+                    s.remove()
 
                 for n in networks:
                     for ac in auto_containers:

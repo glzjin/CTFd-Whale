@@ -1,5 +1,23 @@
 # Changelog
 
+## 2019-11-04
+
+- Change backend to Docker Swarm.
+- Support depoly different os image to different os node.
+
+You should init docker swarm, and add your node to it. And name them with following command:
+
+```
+docker node update --label-add name=windows-1 ****
+docker node update --label-add name=linux-1 ****
+```
+
+Name of them should begin with windows- or linux-.
+
+And put them in the setting panel.
+
+Then if you want to deploy a instance to windows node, You should tag your name with prefix "windows", like "glzjin/super_sql:windows".
+
 ## 2019-10-30
 
 - Optimize for multi worker.

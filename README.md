@@ -16,6 +16,15 @@ A plugin for CTFd which allow your users to launch a standalone instance for cha
 - Admin can manage the instance at the admin panel.
 
 ## Usage
+0. You should init docker swarm, and add your node to it. And name them with following command:
+
+```
+docker node update --label-add name=windows-1 ****
+docker node update --label-add name=linux-1 ****
+```
+
+Name of them should begin with windows- or linux-.
+
 1. Copy this folder to your ctfd plugins folder. *Make sure the folder name is 'ctfd-whale'.*
 2. Deploy [frp](https://github.com/fatedier/frp/) on your servers, and you should make sure CTFd can access frpc admin API directly.
 3. And also make sure docker API is accessible to CTFd, you should create a network in docker called 'ctfd_frp-containers' which allow frp redirect traffic to challenge instances.
@@ -126,7 +135,7 @@ networks:
             config:
                 - subnet: 172.1.0.0/16
     frp-containers:
-        driver: bridge
+        driver: overlay
         internal: true
         ipam:
             config:
