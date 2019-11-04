@@ -18,6 +18,8 @@ And put them in the setting panel.
 
 Then if you want to deploy a instance to windows node, You should tag your name with prefix "windows", like "glzjin/super_sql:windows".
 
+And please modify the container network driver to 'Overlay'!
+
 ## 2019-10-30
 
 - Optimize for multi worker.
