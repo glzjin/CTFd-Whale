@@ -135,18 +135,22 @@ def load(app):
             dynamic_docker_challenge = DynamicDockerChallenge.query \
                 .filter(DynamicDockerChallenge.id == data.challenge_id) \
                 .first_or_404()
+            lan_domain = str(user_id) + "-" + data.uuid
             if dynamic_docker_challenge.redirect_type == "http":
                 if int(configs.get('frp_http_port', "80")) == 80:
                     return json.dumps({'success': True, 'type': 'http', 'domain': data.uuid + domain,
-                                       'remaining_time': 3600 - (datetime.now() - data.start_time).seconds})
+                                       'remaining_time': 3600 - (datetime.now() - data.start_time).seconds,
+                                       'lan_domain': lan_domain})
                 else:
                     return json.dumps({'success': True, 'type': 'http',
                                        'domain': data.uuid + domain + ":" + configs.get('frp_http_port', "80"),
-                                       'remaining_time': 3600 - (datetime.now() - data.start_time).seconds})
+                                       'remaining_time': 3600 - (datetime.now() - data.start_time).seconds,
+                                       'lan_domain': lan_domain})
             else:
                 return json.dumps({'success': True, 'type': 'redirect', 'ip': configs.get('frp_direct_ip_address', ""),
                                    'port': data.port,
-                                   'remaining_time': 3600 - (datetime.now() - data.start_time).seconds})
+                                   'remaining_time': 3600 - (datetime.now() - data.start_time).seconds,
+                                   'lan_domain': lan_domain})
         else:
             return json.dumps({'success': True})
 
@@ -203,7 +207,7 @@ def load(app):
     app.register_blueprint(page_blueprint)
 
     try:
-        lock_file = open("/tmp/sanic.lock", "w")
+        lock_file = open("/tmp/ctfd_whale.lock", "w")
         lock_fd = lock_file.fileno()
         fcntl.lockf(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
 

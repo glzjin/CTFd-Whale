@@ -12,7 +12,7 @@ class LockUtils:
         lock = self.redis_client.lock(name=self.key, timeout=10)
 
         if not lock.acquire(blocking=True, blocking_timeout=0.5):
-            return False
+            return Falsed
 
         self.lock = lock
         return True

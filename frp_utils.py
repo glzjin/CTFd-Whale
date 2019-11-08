@@ -26,6 +26,12 @@ class FrpUtils:
                           "local_ip = %s\n" + \
                           "local_port = %s\n" + \
                           "remote_port = %s\n" + \
+                          "use_compression = true" + \
+                          "\n\n[direct_%s_udp]\n" + \
+                          "type = udp\n" + \
+                          "local_ip = %s\n" + \
+                          "local_port = %s\n" + \
+                          "remote_port = %s\n" + \
                           "use_compression = true"
 
         for c in containers:
@@ -39,6 +45,8 @@ class FrpUtils:
                     dynamic_docker_challenge.redirect_port, c.uuid + domain)
             else:
                 output += direct_template % (
+                    str(c.user_id) + '-' + c.uuid, str(c.user_id) + '-' + c.uuid,
+                    dynamic_docker_challenge.redirect_port, c.port,
                     str(c.user_id) + '-' + c.uuid, str(c.user_id) + '-' + c.uuid,
                     dynamic_docker_challenge.redirect_port, c.port)
 

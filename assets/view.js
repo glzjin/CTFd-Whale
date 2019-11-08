@@ -55,7 +55,8 @@ function loadInfo () {
                 $('#whale-panel').html('<div class="card" style="width: 100%;">' +
                   '<div class="card-body">' +
                     '<h5 class="card-title">Instance Info</h5>' +
-                    '<h6 class="card-subtitle mb-2 text-muted" id="whale-challenge-count-down">Remaining Time：' + response.remaining_time + 's</h6>' +
+                    '<h6 class="card-subtitle mb-2 text-muted" id="whale-challenge-count-down">Remaining Time: ' + response.remaining_time + 's</h6>' +
+                    '<h6 class="card-subtitle mb-2 text-muted">Lan Domain: ' + response.lan_domain + '</h6>' +
                     '<p class="card-text">http://' + response.domain + '</p>' +
                     '<button type="button" class="btn btn-danger card-link" id="whale-button-destroy" onclick="window.challenge.destroy()">Destroy this instance</button>' +
                     '<button type="button" class="btn btn-success card-link" id="whale-button-renew" onclick="window.challenge.renew()">Renew this instance</button>' +
@@ -65,7 +66,8 @@ function loadInfo () {
                 $('#whale-panel').html('<div class="card" style="width: 100%;">' +
                   '<div class="card-body">' +
                     '<h5 class="card-title">Instance Info</h5>' +
-                    '<h6 class="card-subtitle mb-2 text-muted" id="whale-challenge-count-down">Remaining Time：' + response.remaining_time + 's</h6>' +
+                    '<h6 class="card-subtitle mb-2 text-muted" id="whale-challenge-count-down">Remaining Time: ' + response.remaining_time + 's</h6>' +
+                    '<h6 class="card-subtitle mb-2 text-muted">Lan Domain: ' + response.lan_domain + '</h6>' +
                     '<p class="card-text">' + response.ip + ':' + response.port + '</p>' +
                     '<button type="button" class="btn btn-danger card-link" id="whale-button-destroy" onclick="window.challenge.destroy()">Destroy this instance</button>' +
                     '<button type="button" class="btn btn-success card-link" id="whale-button-renew" onclick="window.challenge.renew()">Renew this instance</button>' +
@@ -80,8 +82,8 @@ function loadInfo () {
 
             function showAuto(){
                 const origin = $('#whale-challenge-count-down')[0].innerHTML;
-                const second = parseInt(origin.split("：")[1].split('s')[0]) - 1;
-                $('#whale-challenge-count-down')[0].innerHTML = 'Remaining Time：' + second + 's';
+                const second = parseInt(origin.split(": ")[1].split('s')[0]) - 1;
+                $('#whale-challenge-count-down')[0].innerHTML = 'Remaining Time: ' + second + 's';
                 if(second < 0) {
                     loadInfo();
                 }
