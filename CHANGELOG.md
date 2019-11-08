@@ -1,5 +1,9 @@
 # Changelog
 
+## 2019-11-08
+
+- Add Lan Domain
+
 ## 2019-11-04
 
 - Change backend to Docker Swarm.
