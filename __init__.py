@@ -18,6 +18,7 @@ from .db_utils import DBUtils
 from .lock_utils import LockUtils
 from .frp_utils import FrpUtils
 from .models import DynamicDockerChallenge, DynamicValueDockerChallenge
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
 def load(app):
@@ -210,8 +211,12 @@ def load(app):
         lock_file = open("/tmp/ctfd_whale.lock", "w")
         lock_fd = lock_file.fileno()
         fcntl.lockf(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-
-        scheduler = APScheduler()
+        ### Improve fault tolerance in unstable connection to target machine plarform
+        job_defaults = {
+            'coalesce': True, #Merge same job and avoid reaching maximum number of running instances(scheduler_job)
+            'max_instances': 3 #Improve fault tolerance
+        }
+        scheduler=BackgroundScheduler(job_defaults=job_defaults)
         scheduler.init_app(app)
         scheduler.start()
         scheduler.add_job(id='whale-auto-clean', func=auto_clean_container, trigger="interval", seconds=10)
