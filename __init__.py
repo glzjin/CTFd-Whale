@@ -217,7 +217,7 @@ def load(app):
             'max_instances': 3 #Improve fault tolerance
         }
         scheduler=BackgroundScheduler(job_defaults=job_defaults)
-        scheduler.init_app(app)
+        scheduler = APScheduler(scheduler,app)
         scheduler.start()
         scheduler.add_job(id='whale-auto-clean', func=auto_clean_container, trigger="interval", seconds=10)
         print("[CTFd Whale]Started successfully")
