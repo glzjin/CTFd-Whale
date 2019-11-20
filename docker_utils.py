@@ -159,12 +159,10 @@ class DockerUtils:
                     s.remove()
 
                 for n in networks:
-                    print(n)
-                    print(n.attrs['Labels'])
-                    redis_util.add_available_network_range(n.attrs['Labels']['prefix'])
                     for c in n.containers:
                         n.disconnect(c)
                     n.remove()
+                    redis_util.add_available_network_range(n.attrs['Labels']['prefix'])
         except:
             if not is_retry:
                 DockerUtils.remove_current_docker_container(app, user_id, True)
