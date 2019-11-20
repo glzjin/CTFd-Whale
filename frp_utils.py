@@ -50,5 +50,6 @@ class FrpUtils:
                     str(c.user_id) + '-' + c.uuid, str(c.user_id) + '-' + c.uuid,
                     dynamic_docker_challenge.redirect_port, c.port)
 
-        requests.put("http://" + configs.get("frp_api_ip") + ":" + configs.get("frp_api_port") + "/api/config", output)
-        requests.get("http://" + configs.get("frp_api_ip") + ":" + configs.get("frp_api_port") + "/api/reload")
+        requests.put("http://" + configs.get("frp_api_ip") + ":" + configs.get("frp_api_port") + "/api/config", output,
+                     timeout=5)
+        requests.get("http://" + configs.get("frp_api_ip") + ":" + configs.get("frp_api_port") + "/api/reload", timeout=5)

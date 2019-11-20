@@ -15,7 +15,7 @@ from CTFd.utils import user as current_user
 from CTFd.utils.decorators import admins_only, authed_only
 from .control_utils import ControlUtil
 from .db_utils import DBUtils
-from .lock_utils import LockUtils
+from .redis_utils import RedisUtils
 from .frp_utils import FrpUtils
 from .models import DynamicDockerChallenge, DynamicValueDockerChallenge
 
@@ -47,6 +47,8 @@ def load(app):
     def admin_save_configs():
         req = request.get_json()
         DBUtils.save_all_configs(req.items())
+        redis_util = RedisUtils(app=app)
+        redis_util.init_redis_port_sets()
         return json.dumps({'success': True})
 
     @page_blueprint.route("/admin/containers", methods=['GET'])
@@ -69,7 +71,7 @@ def load(app):
     @admins_only
     def admin_delete_container():
         user_id = request.args.get('user_id')
-        ControlUtil.remove_container(user_id)
+        ControlUtil.remove_container(app, user_id)
         return json.dumps({'success': True})
 
     @page_blueprint.route("/admin/containers", methods=['PATCH'])
@@ -84,15 +86,15 @@ def load(app):
     @authed_only
     def add_container():
         user_id = current_user.get_current_user().id
-        lock_util = LockUtils(app=app, user_id=user_id)
+        redis_util = RedisUtils(app=app, user_id=user_id)
 
-        if not lock_util.acquire():
+        if not redis_util.acquire_lock():
             return json.dumps({'success': False, 'msg': 'Request Too Fast!'})
 
         if ControlUtil.frequency_limit():
             return json.dumps({'success': False, 'msg': 'Frequency limit, You should wait at least 1 min.'})
 
-        ControlUtil.remove_container(user_id)
+        ControlUtil.remove_container(app, user_id)
         challenge_id = request.args.get('challenge_id')
         ControlUtil.check_challenge(challenge_id, user_id)
 
@@ -106,18 +108,12 @@ def load(app):
             .first_or_404()
         flag = "flag{" + str(uuid.uuid4()) + "}"
         if dynamic_docker_challenge.redirect_type == "http":
-            ControlUtil.add_container(user_id=user_id, challenge_id=challenge_id, flag=flag)
+            ControlUtil.add_container(app=app, user_id=user_id, challenge_id=challenge_id, flag=flag)
         else:
-            port = random.randint(int(configs.get("frp_direct_port_minimum")),
-                                  int(configs.get("frp_direct_port_maximum")))
-            while True:
-                if DBUtils.get_container_by_port(port) is None:
-                    break
-                port = random.randint(int(configs.get("frp_direct_port_minimum")),
-                                      int(configs.get("frp_direct_port_maximum")))
-            ControlUtil.add_container(user_id=user_id, challenge_id=challenge_id, flag=flag, port=port)
+            port = redis_util.get_available_port()
+            ControlUtil.add_container(app=app, user_id=user_id, challenge_id=challenge_id, flag=flag, port=port)
 
-        lock_util.release()
+        redis_util.release_lock()
         return json.dumps({'success': True})
 
     @page_blueprint.route('/container', methods=['GET'])
@@ -126,7 +122,7 @@ def load(app):
         user_id = current_user.get_current_user().id
         challenge_id = request.args.get('challenge_id')
         ControlUtil.check_challenge(challenge_id, user_id)
-        data = DBUtils.get_current_containers(user_id=user_id)
+        data = ControlUtil.get_container(user_id=user_id)
         configs = DBUtils.get_all_configs()
         domain = configs.get('frp_http_domain_suffix', "")
         if data is not None:
@@ -158,15 +154,15 @@ def load(app):
     @authed_only
     def remove_container():
         user_id = current_user.get_current_user().id
-        lock_util = LockUtils(app=app, user_id=user_id)
-        if not lock_util.acquire():
+        redis_util = RedisUtils(app=app, user_id=user_id)
+        if not redis_util.acquire_lock():
             return json.dumps({'success': False, 'msg': 'Request Too Fast!'})
 
         if ControlUtil.frequency_limit():
             return json.dumps({'success': False, 'msg': 'Frequency limit, You should wait at least 1 min.'})
 
-        if ControlUtil.remove_container(user_id):
-            lock_util.release()
+        if ControlUtil.remove_container(app, user_id):
+            redis_util.release_lock()
 
             return json.dumps({'success': True})
         else:
@@ -176,8 +172,8 @@ def load(app):
     @authed_only
     def renew_container():
         user_id = current_user.get_current_user().id
-        lock_util = LockUtils(app=app, user_id=user_id)
-        if not lock_util.acquire():
+        redis_util = RedisUtils(app=app, user_id=user_id)
+        if not redis_util.acquire_lock():
             return json.dumps({'success': False, 'msg': 'Request Too Fast!'})
 
         if ControlUtil.frequency_limit():
@@ -187,20 +183,20 @@ def load(app):
         challenge_id = request.args.get('challenge_id')
         ControlUtil.check_challenge(challenge_id, user_id)
         docker_max_renew_count = int(configs.get("docker_max_renew_count"))
-        container = DBUtils.get_current_containers(user_id)
+        container = ControlUtil.get_container(user_id)
         if container is None:
             return json.dumps({'success': False, 'msg': 'Instance not found.'})
         if container.renew_count >= docker_max_renew_count:
             return json.dumps({'success': False, 'msg': 'Max renewal times exceed.'})
-        DBUtils.renew_current_container(user_id=user_id, challenge_id=challenge_id)
-        lock_util.release()
+        ControlUtil.remove_container(user_id=user_id, challenge_id=challenge_id)
+        redis_util.release_lock()
         return json.dumps({'success': True})
 
     def auto_clean_container():
         with app.app_context():
             results = DBUtils.get_all_expired_container()
             for r in results:
-                ControlUtil.remove_container(r.user_id)
+                ControlUtil.remove_container(app, r.user_id)
 
             FrpUtils.update_frp_redirect()
 
@@ -215,6 +211,10 @@ def load(app):
         scheduler.init_app(app)
         scheduler.start()
         scheduler.add_job(id='whale-auto-clean', func=auto_clean_container, trigger="interval", seconds=10)
+
+        redis_util = RedisUtils(app=app)
+        redis_util.init_redis_port_sets()
+
         print("[CTFd Whale]Started successfully")
     except IOError:
         pass

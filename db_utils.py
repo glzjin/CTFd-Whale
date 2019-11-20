@@ -109,6 +109,11 @@ class DBUtils:
         return q.all()
 
     @staticmethod
+    def get_all_container():
+        q = db.session.query(WhaleContainer)
+        return q.all()
+
+    @staticmethod
     def get_all_alive_container_page(page_start, page_end):
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.start_time >= datetime.datetime.now() - datetime.timedelta(seconds=3600))

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2019-11-21
+
+- Refine port and network range search
+- Refine frp request
+- Refine lock timeout
+
 ## 2019-11-08
 
 - Add Lan Domain

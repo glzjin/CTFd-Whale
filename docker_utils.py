@@ -6,11 +6,13 @@ from collections import OrderedDict
 import docker
 from .db_utils import DBUtils
 from .models import DynamicDockerChallenge
+from .redis_utils import RedisUtils
 
 
 class DockerUtils:
+
     @staticmethod
-    def add_new_docker_container(user_id, challenge_id, flag, uuid_code):
+    def add_new_docker_container(app, user_id, challenge_id, flag, uuid_code):
         configs = DBUtils.get_all_configs()
 
         dynamic_docker_challenge = DynamicDockerChallenge.query \
@@ -31,11 +33,8 @@ class DockerUtils:
         if dynamic_docker_challenge.docker_image.startswith("{"):
             images = json.loads(dynamic_docker_challenge.docker_image, object_pairs_hook=OrderedDict)
 
-            range_prefix = '172.64.' + str(random.randint(10, 200))
-            while True:
-                if len(client.networks.list(filters={'label': range_prefix})) == 0:
-                    break
-                range_prefix = '172.64.' + str(random.randint(10, 200))
+            redis_util = RedisUtils(app)
+            range_prefix = redis_util.get_available_network_range()
 
             ipam_pool = docker.types.IPAMPool(
                 subnet=range_prefix + '.0/24',
@@ -44,7 +43,7 @@ class DockerUtils:
             ipam_config = docker.types.IPAMConfig(driver='default', pool_configs=[ipam_pool])
             network_name = str(user_id) + '-' + uuid_code
             network = client.networks.create(network_name, internal=True, ipam=ipam_config, attachable=True,
-                                             labels={range_prefix: range_prefix}, driver="overlay", scope="swarm")
+                                             labels={'prefix': range_prefix}, driver="overlay", scope="swarm")
 
             dns = []
             end_ip = 250
@@ -136,7 +135,7 @@ class DockerUtils:
         return 0
 
     @staticmethod
-    def remove_current_docker_container(user_id, is_retry=False):
+    def remove_current_docker_container(app, user_id, is_retry=False):
         configs = DBUtils.get_all_configs()
         container = DBUtils.get_current_containers(user_id=user_id)
 
@@ -154,16 +153,20 @@ class DockerUtils:
                 for s in services:
                     s.remove()
             else:
+                redis_util = RedisUtils(app)
                 services = client.services.list(filters={'label': str(user_id) + '-' + container.uuid})
                 for s in services:
                     s.remove()
 
                 for n in networks:
-                    for ac in auto_containers:
-                        n.disconnect(ac)
+                    print(n)
+                    print(n.attrs['Labels'])
+                    redis_util.add_available_network_range(n.attrs['Labels']['prefix'])
+                    for c in n.containers:
+                        n.disconnect(c)
                     n.remove()
         except:
             if not is_retry:
-                DockerUtils.remove_current_docker_container(user_id, True)
+                DockerUtils.remove_current_docker_container(app, user_id, True)
 
         return True
