@@ -159,8 +159,8 @@ class DockerUtils:
                     s.remove()
 
                 for n in networks:
-                    for c in n.containers:
-                        n.disconnect(c, force=True)
+                    for ac in auto_containers:
+                        n.disconnect(ac, force=True)
                     n.remove()
                     redis_util.add_available_network_range(n.attrs['Labels']['prefix'])
         except:
