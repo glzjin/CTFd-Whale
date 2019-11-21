@@ -86,8 +86,11 @@ class DBUtils:
         if len(records) == 0:
             return
 
+        configs = DBUtils.get_all_configs()
+        timeout = int(configs.get("docker_timeout", "3600"))
+
         r = records[0]
-        r.start_time = r.start_time + datetime.timedelta(seconds=3600)
+        r.start_time = r.start_time + datetime.timedelta(seconds=timeout)
 
         if r.start_time > datetime.datetime.now():
             r.start_time = datetime.datetime.now()
@@ -98,14 +101,20 @@ class DBUtils:
 
     @staticmethod
     def get_all_expired_container():
+        configs = DBUtils.get_all_configs()
+        timeout = int(configs.get("docker_timeout", "3600"))
+
         q = db.session.query(WhaleContainer)
-        q = q.filter(WhaleContainer.start_time < datetime.datetime.now() - datetime.timedelta(seconds=3600))
+        q = q.filter(WhaleContainer.start_time < datetime.datetime.now() - datetime.timedelta(seconds=timeout))
         return q.all()
 
     @staticmethod
     def get_all_alive_container():
+        configs = DBUtils.get_all_configs()
+        timeout = int(configs.get("docker_timeout", "3600"))
+
         q = db.session.query(WhaleContainer)
-        q = q.filter(WhaleContainer.start_time >= datetime.datetime.now() - datetime.timedelta(seconds=3600))
+        q = q.filter(WhaleContainer.start_time >= datetime.datetime.now() - datetime.timedelta(seconds=timeout))
         return q.all()
 
     @staticmethod
@@ -115,13 +124,19 @@ class DBUtils:
 
     @staticmethod
     def get_all_alive_container_page(page_start, page_end):
+        configs = DBUtils.get_all_configs()
+        timeout = int(configs.get("docker_timeout", "3600"))
+
         q = db.session.query(WhaleContainer)
-        q = q.filter(WhaleContainer.start_time >= datetime.datetime.now() - datetime.timedelta(seconds=3600))
+        q = q.filter(WhaleContainer.start_time >= datetime.datetime.now() - datetime.timedelta(seconds=timeout))
         q = q.slice(page_start, page_end)
         return q.all()
 
     @staticmethod
     def get_all_alive_container_count():
+        configs = DBUtils.get_all_configs()
+        timeout = int(configs.get("docker_timeout", "3600"))
+
         q = db.session.query(WhaleContainer)
-        q = q.filter(WhaleContainer.start_time >= datetime.datetime.now() - datetime.timedelta(seconds=3600))
+        q = q.filter(WhaleContainer.start_time >= datetime.datetime.now() - datetime.timedelta(seconds=timeout))
         return q.count()

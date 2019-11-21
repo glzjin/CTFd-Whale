@@ -1,8 +1,8 @@
 import json
 import random
+import traceback
 import uuid
 from collections import OrderedDict
-
 import docker
 from .db_utils import DBUtils
 from .models import DynamicDockerChallenge
@@ -37,8 +37,7 @@ class DockerUtils:
             range_prefix = redis_util.get_available_network_range()
 
             ipam_pool = docker.types.IPAMPool(
-                subnet=range_prefix + '.0/24',
-                gateway=range_prefix + '.254'
+                subnet=range_prefix
             )
             ipam_config = docker.types.IPAMConfig(driver='default', pool_configs=[ipam_pool])
             network_name = str(user_id) + '-' + uuid_code
@@ -46,13 +45,14 @@ class DockerUtils:
                                              labels={'prefix': range_prefix}, driver="overlay", scope="swarm")
 
             dns = []
-            end_ip = 250
             containers = configs.get("docker_auto_connect_containers", "").split(",")
             for c in containers:
                 if c.find("dns") != -1:
-                    network.connect(c, ipv4_address=range_prefix + "." + str(end_ip))
-                    dns.append(range_prefix + "." + str(end_ip))
-                    end_ip += 1
+                    network.connect(c)
+                    network.reload()
+                    for name in network.attrs['Containers']:
+                        if network.attrs['Containers'][name]['Name'] == c:
+                            dns.append(network.attrs['Containers'][name]['IPv4Address'].split('/')[0])
                 else:
                     network.connect(c)
 
@@ -159,13 +159,15 @@ class DockerUtils:
                     s.remove()
 
                 for n in networks:
-                    print(n)
-                    print(n.attrs['Labels'])
-                    redis_util.add_available_network_range(n.attrs['Labels']['prefix'])
-                    for c in n.containers:
-                        n.disconnect(c)
+                    for ac in auto_containers:
+                        try:
+                            n.disconnect(ac, force=True)
+                        except:
+                            pass
                     n.remove()
+                    redis_util.add_available_network_range(n.attrs['Labels']['prefix'])
         except:
+            traceback.print_exc()
             if not is_retry:
                 DockerUtils.remove_current_docker_container(app, user_id, True)
 

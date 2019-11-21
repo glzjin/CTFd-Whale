@@ -151,6 +151,36 @@
 			<input type="text" class="form-control" id="docker-swarm-nodes" name="docker_swarm_nodes" value="{{ configs.get("docker_swarm_nodes") }}">
 		</div>
 
+        <div class="form-group">
+			<label>
+				Docker Multi-Container Network Subnet
+				<small class="form-text text-muted">
+					Subnet which auto create network will use to divide.
+				</small>
+			</label>
+			<input type="text" class="form-control" id="docker-subnet" name="docker_subnet" value="{{ configs.get("docker_subnet", "174.1.0.0/16") }}">
+		</div>
+
+        <div class="form-group">
+			<label>
+				Docker Multi-Container Network Subnet New Prefix
+				<small class="form-text text-muted">
+					Prefix for auto create network.
+				</small>
+			</label>
+			<input type="number" class="form-control" id="docker-subnet-new-prefix" name="docker_subnet_new_prefix" value="{{ configs.get("docker_subnet_new_prefix", "24") }}">
+		</div>
+
+        <div class="form-group">
+			<label>
+				Docker Container Timeout
+				<small class="form-text text-muted">
+					Docker container running timeout. 3600 mean 3600s.
+				</small>
+			</label>
+			<input type="number" class="form-control" id="docker-timeout" name="docker_timeout" value="{{ configs.get("docker_timeout", "3600") }}">
+		</div>
+
 		<button type="submit" class="btn btn-md btn-primary float-right">Update</button>
 	</form>
 </div>

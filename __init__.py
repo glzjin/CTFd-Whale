@@ -125,6 +125,7 @@ def load(app):
         data = ControlUtil.get_container(user_id=user_id)
         configs = DBUtils.get_all_configs()
         domain = configs.get('frp_http_domain_suffix', "")
+        timeout = int(configs.get("docker_timeout", "3600"))
         if data is not None:
             if int(data.challenge_id) != int(challenge_id):
                 return json.dumps({})
@@ -135,17 +136,17 @@ def load(app):
             if dynamic_docker_challenge.redirect_type == "http":
                 if int(configs.get('frp_http_port', "80")) == 80:
                     return json.dumps({'success': True, 'type': 'http', 'domain': data.uuid + domain,
-                                       'remaining_time': 3600 - (datetime.now() - data.start_time).seconds,
+                                       'remaining_time': timeout - (datetime.now() - data.start_time).seconds,
                                        'lan_domain': lan_domain})
                 else:
                     return json.dumps({'success': True, 'type': 'http',
                                        'domain': data.uuid + domain + ":" + configs.get('frp_http_port', "80"),
-                                       'remaining_time': 3600 - (datetime.now() - data.start_time).seconds,
+                                       'remaining_time': timeout - (datetime.now() - data.start_time).seconds,
                                        'lan_domain': lan_domain})
             else:
                 return json.dumps({'success': True, 'type': 'redirect', 'ip': configs.get('frp_direct_ip_address', ""),
                                    'port': data.port,
-                                   'remaining_time': 3600 - (datetime.now() - data.start_time).seconds,
+                                   'remaining_time': timeout - (datetime.now() - data.start_time).seconds,
                                    'lan_domain': lan_domain})
         else:
             return json.dumps({'success': True})
@@ -188,7 +189,7 @@ def load(app):
             return json.dumps({'success': False, 'msg': 'Instance not found.'})
         if container.renew_count >= docker_max_renew_count:
             return json.dumps({'success': False, 'msg': 'Max renewal times exceed.'})
-        ControlUtil.remove_container(user_id=user_id, challenge_id=challenge_id)
+        ControlUtil.renew_container(user_id=user_id, challenge_id=challenge_id)
         redis_util.release_lock()
         return json.dumps({'success': True})
 

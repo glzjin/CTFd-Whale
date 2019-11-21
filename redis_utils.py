@@ -1,3 +1,4 @@
+import ipaddress
 from flask_redis import FlaskRedis
 from redis.exceptions import LockError
 from .db_utils import DBUtils
@@ -14,8 +15,8 @@ class RedisUtils:
     def init_redis_port_sets(self):
         configs = DBUtils.get_all_configs()
 
-        self.redis_client.spop(self.global_port_key, int(configs.get("frp_direct_port_maximum", 29000)) - int(configs.get("frp_direct_port_minimum", 28000)))
-        self.redis_client.spop(self.global_network_key, 255)
+        self.redis_client.delete(self.global_port_key)
+        self.redis_client.delete(self.global_network_key)
 
         containers = DBUtils.get_all_container()
         used_port_list = []
@@ -27,9 +28,16 @@ class RedisUtils:
                 self.add_available_port(port)
 
         client = docker.DockerClient(base_url=configs.get("docker_api_url"))
-        for middle in range(0, 255):
-            if len(client.networks.list(filters={'label': 'prefix=172.64.' + str(middle)})) == 0:
-                self.add_available_network_range('172.64.' + str(middle))
+        docker_subnet = configs.get("docker_subnet", "174.1.0.0/16")
+        try:
+            docker_subnet = unicode(docker_subnet)
+        except:
+            pass
+        docker_subnet_new_prefix = int(configs.get("docker_subnet_new_prefix", "24"))
+
+        for network in list(ipaddress.ip_network(docker_subnet).subnets(new_prefix=docker_subnet_new_prefix)):
+            if len(client.networks.list(filters={'label': 'prefix=' + str(network)})) == 0:
+                self.add_available_network_range(str(network))
 
     def add_available_network_range(self, network_range):
         self.redis_client.sadd(self.global_network_key, network_range.encode())
