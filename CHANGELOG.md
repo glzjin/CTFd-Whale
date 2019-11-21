@@ -2,6 +2,7 @@
 
 ## 2019-11-21
 
+- Add network prefix & timeout setting.
 - Refine port and network range search
 - Refine frp request
 - Refine lock timeout
