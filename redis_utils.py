@@ -35,9 +35,17 @@ class RedisUtils:
             pass
         docker_subnet_new_prefix = int(configs.get("docker_subnet_new_prefix", "24"))
 
+        exist_networks = []
+        available_networks = []
+
+        for network in client.networks.list(filters={'label': 'prefix'}):
+            exist_networks.append(str(network.attrs['Labels']['prefix']))
+
         for network in list(ipaddress.ip_network(docker_subnet).subnets(new_prefix=docker_subnet_new_prefix)):
-            if len(client.networks.list(filters={'label': 'prefix=' + str(network)})) == 0:
-                self.add_available_network_range(str(network))
+            if str(network) not in exist_networks:
+                available_networks.append(str(network))
+
+        self.redis_client.sadd(self.global_network_key, *set(available_networks))
 
     def add_available_network_range(self, network_range):
         self.redis_client.sadd(self.global_network_key, network_range.encode())
