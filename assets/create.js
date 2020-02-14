@@ -1,3 +1,4 @@
+import $ from "jquery";
 // Markdown Preview
 $('#desc-edit').on('shown.bs.tab', function (event) {
     if (event.target.hash == '#desc-preview'){

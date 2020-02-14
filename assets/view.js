@@ -1,3 +1,6 @@
+import $ from "jquery";
+import CTFd from "core/CTFd";
+
 window.challenge.data = undefined;
 
 window.challenge.renderer = new markdownit({

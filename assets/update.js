@@ -1,3 +1,4 @@
+import $ from "jquery";
 $('#submit-key').click(function (e) {
     submitkey($('#chalid').val(), $('#answer').val())
 });
