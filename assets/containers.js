@@ -1,3 +1,94 @@
+const $ = CTFd.lib.$;
+function htmlentities(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+const modalTpl =
+    '<div class="modal fade" tabindex="-1" role="dialog">' +
+    '  <div class="modal-dialog" role="document">' +
+    '    <div class="modal-content">' +
+    '      <div class="modal-header">' +
+    '        <h5 class="modal-title">{0}</h5>' +
+    '        <button type="button" class="close" data-dismiss="modal" aria-label="Close">' +
+    '          <span aria-hidden="true">&times;</span>' +
+    "        </button>" +
+    "      </div>" +
+    '      <div class="modal-body">' +
+    "      </div>" +
+    '      <div class="modal-footer">' +
+    "      </div>" +
+    "    </div>" +
+    "  </div>" +
+    "</div>";
+
+function ezAlert(args) {
+    const modal = modalTpl.format(args.title, args.body);
+    const obj = $(modal);
+
+    if (typeof args.body === "string") {
+        obj.find(".modal-body").append(`<p>${args.body}</p>`);
+    } else {
+        obj.find(".modal-body").append($(args.body));
+    }
+
+    const button = $(
+        '<button type="button" class="btn btn-primary" data-dismiss="modal">{0}</button>'
+            .format(args.button)
+    );
+
+    if (args.success) {
+        $(button).click(function () {
+            args.success();
+        });
+    }
+
+    if (args.large) {
+        obj.find(".modal-dialog").addClass("modal-lg");
+    }
+
+    obj.find(".modal-footer").append(button);
+    $("main").append(obj);
+
+    obj.modal("show");
+
+    $(obj).on("hidden.bs.modal", function () {
+        $(this).modal("dispose");
+    });
+
+    return obj;
+}
+
+function ezQuery(args) {
+    const modal = modalTpl.format(args.title, args.body);
+    const obj = $(modal);
+
+    if (typeof args.body === "string") {
+        obj.find(".modal-body").append(`<p>${args.body}</p>`);
+    } else {
+        obj.find(".modal-body").append($(args.body));
+    }
+
+    const yes = $('<button type="button" class="btn btn-primary" data-dismiss="modal">Yes</button>');
+    const no = $('<button type="button" class="btn btn-danger" data-dismiss="modal">No</button>');
+
+    obj.find(".modal-footer").append(no);
+    obj.find(".modal-footer").append(yes);
+
+    $("main").append(obj);
+
+    $(obj).on("hidden.bs.modal", function () {
+        $(this).modal("dispose");
+    });
+
+    $(yes).click(function () {
+        args.success();
+    });
+
+    obj.modal("show");
+
+    return obj;
+}
+
 $(".delete-container").click(function (e) {
     e.preventDefault();
     var container_id = $(this).attr("container-id");
@@ -11,7 +102,7 @@ $(".delete-container").click(function (e) {
         .parent()
         .parent();
 
-    ezq({
+    ezQuery({
         title: "Destroy Container",
         body: body,
         success: function () {
@@ -45,7 +136,7 @@ $(".renew-container").click(function (e) {
         htmlentities(container_id)
     );
 
-    ezq({
+    ezQuery({
         title: "Renew Container",
         body: body,
         success: function () {
@@ -62,7 +153,7 @@ $(".renew-container").click(function (e) {
                 })
                 .then(function (response) {
                     if (response.success) {
-                        ezal({
+                        ezAlert({
                             title: "Success",
                             body: "This instance has been renewed!",
                             button: "OK"

@@ -1,3 +1,4 @@
+if ($ === undefined) $ = CTFd.lib.$;
 function update_configs(obj) {
     var target = "/plugins/ctfd-whale/admin/settings";
     var method = "PATCH";

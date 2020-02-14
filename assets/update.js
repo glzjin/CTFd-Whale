@@ -1,4 +1,4 @@
-import $ from "jquery";
+if ($ === undefined) $ = CTFd.lib.$
 $('#submit-key').click(function (e) {
     submitkey($('#chalid').val(), $('#answer').val())
 });
