@@ -1,6 +1,6 @@
 // Markdown Preview
 if ($ === undefined) $ = CTFd.lib.$
-$('#desc-edit').on('shown.bs.tab', function (event) {
+$('#desc-edit').on('shown.bs.tab', function(event) {
     if (event.target.hash == '#desc-preview') {
         var editor_value = $('#desc-editor').val();
         $(event.target.hash).html(
@@ -8,7 +8,7 @@ $('#desc-edit').on('shown.bs.tab', function (event) {
         );
     }
 });
-$('#new-desc-edit').on('shown.bs.tab', function (event) {
+$('#new-desc-edit').on('shown.bs.tab', function(event) {
     if (event.target.hash == '#new-desc-preview') {
         var editor_value = $('#new-desc-editor').val();
         $(event.target.hash).html(
@@ -16,7 +16,7 @@ $('#new-desc-edit').on('shown.bs.tab', function (event) {
         );
     }
 });
-$("#solve-attempts-checkbox").change(function () {
+$("#solve-attempts-checkbox").change(function() {
     if (this.checked) {
         $('#solve-attempts-input').show();
     } else {
@@ -25,6 +25,6 @@ $("#solve-attempts-checkbox").change(function () {
     }
 });
 
-$(document).ready(function () {
+$(document).ready(function() {
     $('[data-toggle="tooltip"]').tooltip();
 });

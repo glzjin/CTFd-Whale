@@ -1,15 +1,15 @@
 if ($ === undefined) $ = CTFd.lib.$
-$('#submit-key').click(function (e) {
+$('#submit-key').click(function(e) {
     submitkey($('#chalid').val(), $('#answer').val())
 });
 
-$('#submit-keys').click(function (e) {
+$('#submit-keys').click(function(e) {
     e.preventDefault();
     $('#update-keys').modal('hide');
 });
 
 $('#limit_max_attempts').change(function() {
-    if(this.checked) {
+    if (this.checked) {
         $('#chal-attempts-group').show();
     } else {
         $('#chal-attempts-group').hide();
@@ -18,7 +18,7 @@ $('#limit_max_attempts').change(function() {
 });
 
 // Markdown Preview
-$('#desc-edit').on('shown.bs.tab', function (event) {
+$('#desc-edit').on('shown.bs.tab', function(event) {
     if (event.target.hash == '#desc-preview') {
         var editor_value = $('#desc-editor').val();
         $(event.target.hash).html(
@@ -26,7 +26,7 @@ $('#desc-edit').on('shown.bs.tab', function (event) {
         );
     }
 });
-$('#new-desc-edit').on('shown.bs.tab', function (event) {
+$('#new-desc-edit').on('shown.bs.tab', function(event) {
     if (event.target.hash == '#new-desc-preview') {
         var editor_value = $('#new-desc-editor').val();
         $(event.target.hash).html(
@@ -36,17 +36,17 @@ $('#new-desc-edit').on('shown.bs.tab', function (event) {
 });
 
 function loadchal(id, update) {
-    $.get(script_root + '/admin/chal/' + id, function(obj){
+    $.get(script_root + '/admin/chal/' + id, function(obj) {
         $('#desc-write-link').click(); // Switch to Write tab
         if (typeof update === 'undefined')
             $('#update-challenge').modal();
     });
 }
 
-function openchal(id){
+function openchal(id) {
     loadchal(id);
 }
 
-$(document).ready(function(){
+$(document).ready(function() {
     $('[data-toggle="tooltip"]').tooltip();
 });
