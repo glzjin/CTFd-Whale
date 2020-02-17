@@ -1,4 +1,5 @@
 const $ = CTFd.lib.$;
+
 function htmlentities(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -21,75 +22,7 @@ const modalTpl =
     "  </div>" +
     "</div>";
 
-function ezAlert(args) {
-    const modal = modalTpl.format(args.title, args.body);
-    const obj = $(modal);
-
-    if (typeof args.body === "string") {
-        obj.find(".modal-body").append(`<p>${args.body}</p>`);
-    } else {
-        obj.find(".modal-body").append($(args.body));
-    }
-
-    const button = $(
-        '<button type="button" class="btn btn-primary" data-dismiss="modal">{0}</button>'
-            .format(args.button)
-    );
-
-    if (args.success) {
-        $(button).click(function () {
-            args.success();
-        });
-    }
-
-    if (args.large) {
-        obj.find(".modal-dialog").addClass("modal-lg");
-    }
-
-    obj.find(".modal-footer").append(button);
-    $("main").append(obj);
-
-    obj.modal("show");
-
-    $(obj).on("hidden.bs.modal", function () {
-        $(this).modal("dispose");
-    });
-
-    return obj;
-}
-
-function ezQuery(args) {
-    const modal = modalTpl.format(args.title, args.body);
-    const obj = $(modal);
-
-    if (typeof args.body === "string") {
-        obj.find(".modal-body").append(`<p>${args.body}</p>`);
-    } else {
-        obj.find(".modal-body").append($(args.body));
-    }
-
-    const yes = $('<button type="button" class="btn btn-primary" data-dismiss="modal">Yes</button>');
-    const no = $('<button type="button" class="btn btn-danger" data-dismiss="modal">No</button>');
-
-    obj.find(".modal-footer").append(no);
-    obj.find(".modal-footer").append(yes);
-
-    $("main").append(obj);
-
-    $(obj).on("hidden.bs.modal", function () {
-        $(this).modal("dispose");
-    });
-
-    $(yes).click(function () {
-        args.success();
-    });
-
-    obj.modal("show");
-
-    return obj;
-}
-
-$(".delete-container").click(function (e) {
+$(".delete-container").click(function(e) {
     e.preventDefault();
     var container_id = $(this).attr("container-id");
     var user_id = $(this).attr("user-id");
@@ -102,22 +35,22 @@ $(".delete-container").click(function (e) {
         .parent()
         .parent();
 
-    ezQuery({
+    CTFd.ui.ezq.ezQuery({
         title: "Destroy Container",
         body: body,
-        success: function () {
+        success: function() {
             CTFd.fetch("/plugins/ctfd-whale/admin/containers?user_id=" + user_id, {
-                method: "DELETE",
-                credentials: "same-origin",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json"
-                }
-            })
-                .then(function (response) {
+                    method: "DELETE",
+                    credentials: "same-origin",
+                    headers: {
+                        Accept: "application/json",
+                        "Content-Type": "application/json"
+                    }
+                })
+                .then(function(response) {
                     return response.json();
                 })
-                .then(function (response) {
+                .then(function(response) {
                     if (response.success) {
                         row.remove();
                     }
@@ -126,7 +59,7 @@ $(".delete-container").click(function (e) {
     });
 });
 
-$(".renew-container").click(function (e) {
+$(".renew-container").click(function(e) {
     e.preventDefault();
     var container_id = $(this).attr("container-id");
     var challenge_id = $(this).attr("challenge-id");
@@ -136,24 +69,24 @@ $(".renew-container").click(function (e) {
         htmlentities(container_id)
     );
 
-    ezQuery({
+    CTFd.ui.ezq.ezQuery({
         title: "Renew Container",
         body: body,
-        success: function () {
+        success: function() {
             CTFd.fetch("/plugins/ctfd-whale/admin/containers?user_id=" + user_id + "&challenge_id=" + challenge_id, {
-                method: "PATCH",
-                credentials: "same-origin",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json"
-                }
-            })
-                .then(function (response) {
+                    method: "PATCH",
+                    credentials: "same-origin",
+                    headers: {
+                        Accept: "application/json",
+                        "Content-Type": "application/json"
+                    }
+                })
+                .then(function(response) {
                     return response.json();
                 })
-                .then(function (response) {
+                .then(function(response) {
                     if (response.success) {
-                        ezAlert({
+                        CTFd.ui.ezq.ezAlert({
                             title: "Success",
                             body: "This instance has been renewed!",
                             button: "OK"
