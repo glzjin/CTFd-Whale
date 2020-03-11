@@ -1,5 +1,9 @@
 # Changelog
 
+## 2020-02-18
+
+- Refine front for ctfd newer version.(@frankli0324)
+
 ## 2019-11-21
 
 - Add network prefix & timeout setting.
