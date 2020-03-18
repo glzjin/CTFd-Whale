@@ -1,5 +1,9 @@
 # Changelog
 
+## 2020-03-18
+
+- Allow non-dynamic flag.
+
 ## 2020-02-18
 
 - Refine front for ctfd newer version.(@frankli0324)
