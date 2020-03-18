@@ -14,6 +14,7 @@ from CTFd.models import (
     Tags,
     Hints,
 )
+from CTFd.plugins.flags import get_flag_class
 from CTFd.plugins.challenges import BaseChallenge
 from CTFd.utils import user as current_user
 from CTFd.utils.modes import get_model
@@ -171,18 +172,27 @@ class DynamicValueDockerChallenge(BaseChallenge):
         """
         data = request.form or request.get_json()
         submission = data["submission"].strip()
-        user_id = current_user.get_current_user().id
-        q = db.session.query(WhaleContainer)
-        q = q.filter(WhaleContainer.user_id == user_id)
-        q = q.filter(WhaleContainer.challenge_id == challenge.id)
-        records = q.all()
-        if len(records) == 0:
-            return False, "Please solve it during the container is running"
 
-        container = records[0]
-        if container.flag == submission:
-            return True, "Correct"
-        return False, "Incorrect"
+        flags = Flags.query.filter_by(challenge_id=challenge.id).all()
+
+        if len(flags) > 0:
+            for flag in flags:
+                if get_flag_class(flag.type).compare(flag, submission):
+                    return True, "Correct"
+            return False, "Incorrect"
+        else:
+            user_id = current_user.get_current_user().id
+            q = db.session.query(WhaleContainer)
+            q = q.filter(WhaleContainer.user_id == user_id)
+            q = q.filter(WhaleContainer.challenge_id == challenge.id)
+            records = q.all()
+            if len(records) == 0:
+                return False, "Please solve it during the container is running"
+
+            container = records[0]
+            if container.flag == submission:
+                return True, "Correct"
+            return False, "Incorrect"
 
     @staticmethod
     def solve(user, team, challenge, request):
