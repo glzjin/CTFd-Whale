@@ -36,6 +36,11 @@ function loadInfo() {
         }
         return response.json();
     }).then(function(response) {
+        if (window.t !== undefined) {
+            clearInterval(window.t);
+            window.t = undefined;
+        }
+        
         if (response.remaining_time === undefined) {
             $('#whale-panel').html('<div class="card" style="width: 100%;">' +
                 '<div class="card-body">' +
@@ -66,11 +71,6 @@ function loadInfo() {
                     '<button type="button" class="btn btn-success card-link" id="whale-button-renew" onclick="CTFd._internal.challenge.renew()">Renew this instance</button>' +
                     '</div>' +
                     '</div>');
-            }
-
-            if (window.t !== undefined) {
-                clearInterval(window.t);
-                window.t = undefined;
             }
 
             function showAuto() {
