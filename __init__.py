@@ -1,7 +1,6 @@
 from __future__ import division  # Use floating point for math calculations
 
 import fcntl
-import json
 
 import requests
 from flask import Blueprint, render_template
@@ -9,8 +8,8 @@ from flask_apscheduler import APScheduler
 
 from CTFd.api import CTFd_API_v1
 from CTFd.plugins import (
-        register_plugin_assets_directory,
-        register_admin_plugin_menu_bar,
+    register_plugin_assets_directory,
+    register_admin_plugin_menu_bar,
 )
 from CTFd.plugins.challenges import CHALLENGE_CLASSES
 from .api import *
@@ -45,7 +44,7 @@ def load(app):
     @admins_only
     def admin_list_configs():
         configs = DBUtils.get_all_configs()
-        return render_template('config.html', configs=configs)
+        return render_template('config/config.html', configs=configs)
 
     @page_blueprint.route("/admin/containers")
     @admins_only

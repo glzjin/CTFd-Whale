@@ -3,6 +3,7 @@ from datetime import datetime
 
 from flask import request, current_app
 from flask_restx import Namespace, Resource
+from werkzeug.exceptions import Forbidden
 
 from CTFd.utils import user as current_user
 from CTFd.utils.decorators import admins_only, authed_only
@@ -13,6 +14,24 @@ from .redis_utils import RedisUtils
 
 admin_namespace = Namespace("ctfd-whale-admin")
 user_namespace = Namespace("ctfd-whale-user")
+
+
+@admin_namespace.errorhandler(Forbidden)
+@user_namespace.errorhandler(Forbidden)
+def handle_forbidden(err):
+    return {
+        'success': False,
+        'message': 'Please login first'
+    }, 403
+
+
+@admin_namespace.errorhandler
+@user_namespace.errorhandler
+def handle_default(err):
+    return {
+        'success': False,
+        'message': 'Unexpected things happened'
+    }, 500
 
 
 @admin_namespace.route('/settings')
@@ -73,9 +92,7 @@ class UserContainers(Resource):
         challenge_id = request.args.get('challenge_id')
         ControlUtil.check_challenge(challenge_id, user_id)
         data = ControlUtil.get_container(user_id=user_id)
-        configs = DBUtils.get_all_configs()
-        domain = configs.get('frp_http_domain_suffix', "")
-        timeout = int(configs.get("docker_timeout", "3600"))
+        timeout = int(DBUtils.get_config("docker_timeout", "3600"))
         if data is not None:
             if int(data.challenge_id) != int(challenge_id):
                 return {}
@@ -99,7 +116,7 @@ class UserContainers(Resource):
                         'remaining_time': timeout - (datetime.now() - data.start_time).seconds,
                         'lan_domain': lan_domain}
         else:
-            return {'success': True}
+            return {'success': True, 'data': {}}
 
     @staticmethod
     @authed_only
@@ -108,19 +125,18 @@ class UserContainers(Resource):
         redis_util = RedisUtils(app=current_app, user_id=user_id)
 
         if not redis_util.acquire_lock():
-            return {'success': False, 'msg': 'Request Too Fast!'}
+            return {'success': False, 'message': 'Request Too Fast!'}
 
         if ControlUtil.frequency_limit():
-            return {'success': False, 'msg': 'Frequency limit, You should wait at least 1 min.'}
+            return {'success': False, 'message': 'Frequency limit, You should wait at least 1 min.'}
 
         ControlUtil.remove_container(current_app, user_id)
         challenge_id = request.args.get('challenge_id')
         ControlUtil.check_challenge(challenge_id, user_id)
 
-        configs = DBUtils.get_all_configs()
         current_count = DBUtils.get_all_alive_container_count()
-        if int(configs.get("docker_max_container_count")) <= int(current_count):
-            return {'success': False, 'msg': 'Max container count exceed.'}
+        if int(DBUtils.get_config("docker_max_container_count")) <= int(current_count):
+            return {'success': False, 'message': 'Max container count exceed.'}
 
         dynamic_docker_challenge = DynamicDockerChallenge.query \
             .filter(DynamicDockerChallenge.id == challenge_id) \
@@ -143,20 +159,19 @@ class UserContainers(Resource):
         user_id = current_user.get_current_user().id
         redis_util = RedisUtils(app=current_app, user_id=user_id)
         if not redis_util.acquire_lock():
-            return {'success': False, 'msg': 'Request Too Fast!'}
+            return {'success': False, 'message': 'Request Too Fast!'}
 
         if ControlUtil.frequency_limit():
-            return {'success': False, 'msg': 'Frequency limit, You should wait at least 1 min.'}
+            return {'success': False, 'message': 'Frequency limit, You should wait at least 1 min.'}
 
-        configs = DBUtils.get_all_configs()
         challenge_id = request.args.get('challenge_id')
         ControlUtil.check_challenge(challenge_id, user_id)
-        docker_max_renew_count = int(configs.get("docker_max_renew_count"))
+        docker_max_renew_count = int(DBUtils.get_config("docker_max_renew_count"))
         container = ControlUtil.get_container(user_id)
         if container is None:
-            return {'success': False, 'msg': 'Instance not found.'}
+            return {'success': False, 'message': 'Instance not found.'}
         if container.renew_count >= docker_max_renew_count:
-            return {'success': False, 'msg': 'Max renewal times exceed.'}
+            return {'success': False, 'message': 'Max renewal times exceed.'}
         ControlUtil.renew_container(user_id=user_id, challenge_id=challenge_id)
         redis_util.release_lock()
         return {'success': True}
@@ -167,14 +182,14 @@ class UserContainers(Resource):
         user_id = current_user.get_current_user().id
         redis_util = RedisUtils(app=current_app, user_id=user_id)
         if not redis_util.acquire_lock():
-            return {'success': False, 'msg': 'Request Too Fast!'}
+            return {'success': False, 'message': 'Request Too Fast!'}
 
         if ControlUtil.frequency_limit():
-            return {'success': False, 'msg': 'Frequency limit, You should wait at least 1 min.'}
+            return {'success': False, 'message': 'Frequency limit, You should wait at least 1 min.'}
 
         if ControlUtil.remove_container(current_app, user_id):
             redis_util.release_lock()
 
             return {'success': True}
         else:
-            return {'success': False, 'msg': 'Failed when destroy instance, please contact admin!'}
+            return {'success': False, 'message': 'Failed when destroy instance, please contact admin!'}
