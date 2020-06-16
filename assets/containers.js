@@ -21,7 +21,7 @@ $(".delete-container").click(function(e) {
         title: "Destroy Container",
         body: body,
         success: function() {
-            CTFd.fetch("/plugins/ctfd-whale/admin/containers?user_id=" + user_id, {
+            CTFd.fetch("/api/v1/plugins/ctfd-whale/admin/containers?user_id=" + user_id, {
                     method: "DELETE",
                     credentials: "same-origin",
                     headers: {
@@ -55,7 +55,7 @@ $(".renew-container").click(function(e) {
         title: "Renew Container",
         body: body,
         success: function() {
-            CTFd.fetch("/plugins/ctfd-whale/admin/containers?user_id=" + user_id + "&challenge_id=" + challenge_id, {
+            CTFd.fetch("/api/v1/plugins/ctfd-whale/admin/containers?user_id=" + user_id + "&challenge_id=" + challenge_id, {
                     method: "PATCH",
                     credentials: "same-origin",
                     headers: {

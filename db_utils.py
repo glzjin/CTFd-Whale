@@ -1,11 +1,8 @@
 import datetime
 import uuid
 
+from CTFd.models import db
 from .models import WhaleConfig, WhaleContainer
-
-from CTFd.models import (
-    db
-)
 
 
 class DBUtils:
