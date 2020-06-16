@@ -199,7 +199,18 @@ def load(app):
             for r in results:
                 ControlUtil.remove_container(app, r.user_id)
 
-            FrpUtils.update_frp_redirect()
+            configs = DBUtils.get_all_configs()
+            containers = DBUtils.get_all_alive_container()
+
+            output = configs.get("frp_config_template")
+
+            for c in containers:
+                output += c.frp_config
+
+            requests.put(f'http://{configs.get("frp_api_ip")}:{configs.get("frp_api_port")}/api/config',
+                         output, timeout=5)
+            requests.get(f'http://{configs.get("frp_api_ip")}:{configs.get("frp_api_port")}/api/reload',
+                         timeout=5)
 
     app.register_blueprint(page_blueprint)
 

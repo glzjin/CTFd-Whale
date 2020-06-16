@@ -1,4 +1,5 @@
 from __future__ import division  # Use floating point for math calculations
+
 import math
 from datetime import datetime
 
@@ -14,8 +15,8 @@ from CTFd.models import (
     Tags,
     Hints,
 )
-from CTFd.plugins.flags import get_flag_class
 from CTFd.plugins.challenges import BaseChallenge
+from CTFd.plugins.flags import get_flag_class
 from CTFd.utils import user as current_user
 from CTFd.utils.modes import get_model
 from CTFd.utils.uploads import delete_file
@@ -322,6 +323,52 @@ class WhaleContainer(db.Model):
     challenge = db.relationship(
         "Challenges", foreign_keys="WhaleContainer.challenge_id", lazy="select"
     )
+
+    @property
+    def user_access(self):
+        configs = {}
+        for c in WhaleConfig.query.all():
+            configs[str(c.key)] = str(c.value)
+        access = ''
+        if self.challenge.redirect_type == 'http':
+            access = f'http://{self.uuid}{configs.get("frp_http_domain_suffix", "")}'
+            if configs.get('frp_http_port', '80') != '80':
+                access += ':' + configs.get('frp_http_port')
+        elif self.challenge.redirect_type == 'direct':
+            f'nc {configs.get("frp_direct_ip_address" "")} {self.port}'
+        return access
+
+    @property
+    def frp_config(self):
+        configs = {}
+        for c in WhaleConfig.query.all():
+            configs[str(c.key)] = str(c.value)
+        if self.challenge.redirect_type == 'http':
+            return f"""
+
+[http_{str(self.user_id) + '-' + self.uuid}]
+type = http
+local_ip = {str(self.user_id) + '-' + self.uuid}
+local_port = {self.challenge.redirect_port}
+custom_domains = {self.uuid + configs.get('frp_http_domain_suffix', '')}
+use_compression = true"""
+        elif self.challenge.redirect_type == 'direct':
+            return f"""
+
+[direct_{str(self.user_id) + '-' + self.uuid}]
+type = tcp
+local_ip = {str(self.user_id) + '-' + self.uuid}
+local_port = {self.challenge.redirect_port}
+remote_port = {self.port}
+use_compression = true
+
+[direct_{str(self.user_id) + '-' + self.uuid}_udp]
+type = udp
+local_ip = {str(self.user_id) + '-' + self.uuid}
+local_port = {self.challenge.redirect_port}
+remote_port = {self.port}
+use_compression = true
+"""
 
     def __init__(self, user_id, challenge_id, flag, uuid, port):
         self.user_id = user_id
