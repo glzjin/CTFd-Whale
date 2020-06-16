@@ -95,26 +95,19 @@ class UserContainers(Resource):
         timeout = int(DBUtils.get_config("docker_timeout", "3600"))
         if data is not None:
             if int(data.challenge_id) != int(challenge_id):
-                return {}
-            dynamic_docker_challenge = DynamicDockerChallenge.query \
-                .filter(DynamicDockerChallenge.id == data.challenge_id) \
-                .first_or_404()
-            lan_domain = str(user_id) + "-" + data.uuid
-            if dynamic_docker_challenge.redirect_type == "http":
-                if int(configs.get('frp_http_port', "80")) == 80:
-                    return {'success': True, 'type': 'http', 'domain': data.uuid + domain,
-                            'remaining_time': timeout - (datetime.now() - data.start_time).seconds,
-                            'lan_domain': lan_domain}
-                else:
-                    return {'success': True, 'type': 'http',
-                            'domain': data.uuid + domain + ":" + configs.get('frp_http_port', "80"),
-                            'remaining_time': timeout - (datetime.now() - data.start_time).seconds,
-                            'lan_domain': lan_domain}
-            else:
-                return {'success': True, 'type': 'redirect', 'ip': configs.get('frp_direct_ip_address', ""),
-                        'port': data.port,
-                        'remaining_time': timeout - (datetime.now() - data.start_time).seconds,
-                        'lan_domain': lan_domain}
+                return {
+                    'success': False,
+                    'message': f'Container started but not from this challenge ({data.challenge_id})'
+                }
+            return {
+                'success': True,
+                'data': {
+                    'lan_domain': str(user_id) + "-" + data.uuid,
+                    'type': 'http',
+                    'user_access': data.user_access,
+                    'remaining_time': timeout - (datetime.now() - data.start_time).seconds,
+                }
+            }
         else:
             return {'success': True, 'data': {}}
 
