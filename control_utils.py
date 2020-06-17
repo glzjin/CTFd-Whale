@@ -5,6 +5,7 @@ from flask import session, current_app
 from sqlalchemy.sql import and_
 
 from CTFd.models import Challenges, Users
+from CTFd.utils.user import is_admin
 from .db_utils import DBUtils
 from .docker_utils import DockerUtils
 from .redis_utils import RedisUtils
@@ -28,28 +29,18 @@ class ControlUtil:
         for _ in range(3):  # configurable? as "onerror_retry_cnt"
             try:
                 DockerUtils.remove_container(container)
-                DBUtils.remove_container_record(user_id)
                 if container.port != 0:
                     redis_util = RedisUtils(app=current_app)
                     redis_util.add_available_port(container.port)
+                DBUtils.remove_container_record(user_id)
                 return True
             except:
                 traceback.print_exc()
         return False
 
     @staticmethod
-    def get_container(user_id):
-        return DBUtils.get_current_containers(user_id=user_id)
-
-    @staticmethod
-    def renew_container(user_id, challenge_id):
-        DBUtils.renew_current_container(user_id=user_id, challenge_id=challenge_id)
-
-    @staticmethod
-    def check_challenge(challenge_id, user_id):
-        user = Users.query.filter_by(id=user_id).first()
-
-        if user.type == "admin":
+    def check_challenge(challenge_id):
+        if is_admin():
             Challenges.query.filter(
                 Challenges.id == challenge_id
             ).first_or_404()

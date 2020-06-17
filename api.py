@@ -89,8 +89,8 @@ class UserContainers(Resource):
     def get():
         user_id = current_user.get_current_user().id
         challenge_id = request.args.get('challenge_id')
-        ControlUtil.check_challenge(challenge_id, user_id)
-        data = ControlUtil.get_container(user_id=user_id)
+        ControlUtil.check_challenge(challenge_id)
+        data = DBUtils.get_current_containers(user_id=user_id)
         timeout = int(DBUtils.get_config("docker_timeout", "3600"))
         if data is not None:
             if int(data.challenge_id) != int(challenge_id):
@@ -124,7 +124,7 @@ class UserContainers(Resource):
 
         ControlUtil.try_remove_container(user_id)
         challenge_id = request.args.get('challenge_id')
-        ControlUtil.check_challenge(challenge_id, user_id)
+        ControlUtil.check_challenge(challenge_id)
 
         current_count = DBUtils.get_all_alive_container_count()
         if int(DBUtils.get_config("docker_max_container_count")) <= int(current_count):
@@ -133,7 +133,6 @@ class UserContainers(Resource):
         if not ControlUtil.try_add_container(
                 user_id=user_id,
                 challenge_id=challenge_id):
-            redis_util.release_lock()  # not user's fault
             return {'success': False, 'message': 'No available ports. Please wait for a few minutes.'}
         redis_util.release_lock()
         return {'success': True}
@@ -150,14 +149,14 @@ class UserContainers(Resource):
             return {'success': False, 'message': 'Frequency limit, You should wait at least 1 min.'}
 
         challenge_id = request.args.get('challenge_id')
-        ControlUtil.check_challenge(challenge_id, user_id)
+        ControlUtil.check_challenge(challenge_id)
         docker_max_renew_count = int(DBUtils.get_config("docker_max_renew_count"))
-        container = ControlUtil.get_container(user_id)
+        container = DBUtils.get_current_containers(user_id)
         if container is None:
             return {'success': False, 'message': 'Instance not found.'}
         if container.renew_count >= docker_max_renew_count:
             return {'success': False, 'message': 'Max renewal times exceed.'}
-        ControlUtil.renew_container(user_id=user_id, challenge_id=challenge_id)
+        DBUtils.renew_current_container(user_id=user_id, challenge_id=challenge_id)
         redis_util.release_lock()
         return {'success': True}
 

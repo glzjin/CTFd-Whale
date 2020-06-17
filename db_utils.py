@@ -49,30 +49,18 @@ class DBUtils:
     def get_current_containers(user_id):
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.user_id == user_id)
-        records = q.all()
-        if len(records) == 0:
-            return None
-
-        return records[0]
+        return q.first()
 
     @staticmethod
     def get_container_by_port(port):
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.port == port)
-        records = q.all()
-        if len(records) == 0:
-            return None
-
-        return records[0]
+        return q.first()
 
     @staticmethod
     def remove_container_record(user_id):
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.user_id == user_id)
-        # records = q.all()
-        # for r in records:
-        #     pass
-
         q.delete()
         db.session.commit()
         db.session.close()
@@ -81,20 +69,21 @@ class DBUtils:
     def renew_current_container(user_id, challenge_id):
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.user_id == user_id)
-        q = q.filter(WhaleContainer.challenge_id == challenge_id)
-        records = q.all()
-        if len(records) == 0:
-            return
+        container = q.filter(
+            WhaleContainer.challenge_id == challenge_id
+        ).first()
 
         timeout = int(DBUtils.get_config("docker_timeout", "3600"))
 
-        r = records[0]
-        r.start_time = r.start_time + datetime.timedelta(seconds=timeout)
+        if not container:
+            return
+        container.start_time = container.start_time + \
+            datetime.timedelta(seconds=timeout)
 
-        if r.start_time > datetime.datetime.now():
-            r.start_time = datetime.datetime.now()
+        if container.start_time > datetime.datetime.now():
+            container.start_time = datetime.datetime.now()
 
-        r.renew_count += 1
+        container.renew_count += 1
         db.session.commit()
 
     @staticmethod

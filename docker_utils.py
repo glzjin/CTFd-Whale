@@ -15,7 +15,14 @@ class DockerUtils:
     @staticmethod
     def add_container(container):
         configs = DBUtils.get_all_configs()
-        client = docker.DockerClient(base_url=configs.get("docker_api_url"))
+        try:
+            client = docker.DockerClient(base_url=configs["docker_api_url"])
+        except Exception as e:
+            raise WhaleError(
+                'Docker Connection Error' +
+                'Please ensure the docker api url (first config item) is correct' +
+                'if you are using unix:///var/run/docker.sock, check if the socket is correctly mapped'
+            )
         if container.challenge.docker_image.startswith("{"):
             DockerUtils._create_grouped_container(client, container, configs)
         else:
@@ -109,7 +116,14 @@ class DockerUtils:
 
         whale_id = f'{container.user_id}-{container.uuid}'
 
-        client = docker.DockerClient(base_url=configs.get("docker_api_url"))
+        try:
+            client = docker.DockerClient(base_url=configs.get("docker_api_url"))
+        except Exception as e:
+            raise WhaleError(
+                'Docker Connection Error' +
+                'Please ensure the docker api url (first config item) is correct' +
+                'if you are using unix:///var/run/docker.sock, check if the socket is correctly mapped'
+            )
         for s in client.services.list(filters={'label': f'whale_id={whale_id}'}):
             s.remove()
 

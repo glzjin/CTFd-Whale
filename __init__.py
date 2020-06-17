@@ -17,6 +17,7 @@ from .challenge_type import DynamicValueDockerChallenge
 from .control_utils import ControlUtil
 from .db_utils import DBUtils
 from .redis_utils import RedisUtils
+from .utils import WhaleError
 
 
 def load(app):
@@ -70,10 +71,18 @@ def load(app):
             for c in containers:
                 output += c.frp_config
 
-            requests.put(f'http://{configs.get("frp_api_ip")}:{configs.get("frp_api_port")}/api/config',
-                         output, timeout=5)
-            requests.get(f'http://{configs.get("frp_api_ip")}:{configs.get("frp_api_port")}/api/reload',
-                         timeout=5)
+            try:
+                # why not just request.get(configs.get('frp_url'))?
+                # so we can authorize a connection by setting
+                # frp_url = http://user:pass@ip:port
+                frp_addr = f'http://{configs.get("frp_api_ip", "frpc")}:{configs.get("frp_api_port", "7400")}'
+                requests.put(f'{frp_addr}/api/config', output, timeout=5)
+                requests.get(f'{frp_addr}/api/reload', timeout=5)
+            except requests.RequestException:
+                raise WhaleError(
+                    'frpc request failed\n' +
+                    'please check the frp related configs'
+                )
 
     app.register_blueprint(page_blueprint)
 
@@ -85,7 +94,10 @@ def load(app):
         scheduler = APScheduler()
         scheduler.init_app(app)
         scheduler.start()
-        scheduler.add_job(id='whale-auto-clean', func=auto_clean_container, trigger="interval", seconds=10)
+        scheduler.add_job(
+            id='whale-auto-clean', func=auto_clean_container,
+            trigger="interval", seconds=10
+        )
 
         redis_util = RedisUtils(app=app)
         redis_util.init_redis_port_sets()
