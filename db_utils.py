@@ -38,14 +38,12 @@ class DBUtils:
         db.session.close()
 
     @staticmethod
-    def create_new_container(user_id, challenge_id, flag, port=0):
-        uuid_code = uuid.uuid4()
-        container = WhaleContainer(user_id=user_id, challenge_id=challenge_id, flag=flag, uuid=uuid_code, port=port)
+    def create_container_record(user_id, challenge_id, port=0):
+        container = WhaleContainer(user_id=user_id, challenge_id=challenge_id, port=port)
         db.session.add(container)
         db.session.commit()
-        db.session.close()
 
-        return str(uuid_code)
+        return container
 
     @staticmethod
     def get_current_containers(user_id):
@@ -68,7 +66,7 @@ class DBUtils:
         return records[0]
 
     @staticmethod
-    def remove_current_container(user_id):
+    def remove_container_record(user_id):
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.user_id == user_id)
         # records = q.all()
@@ -98,7 +96,6 @@ class DBUtils:
 
         r.renew_count += 1
         db.session.commit()
-        db.session.close()
 
     @staticmethod
     def get_all_expired_container():

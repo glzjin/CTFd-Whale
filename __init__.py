@@ -13,9 +13,9 @@ from CTFd.plugins import (
 )
 from CTFd.plugins.challenges import CHALLENGE_CLASSES
 from .api import *
+from .challenge_type import DynamicValueDockerChallenge
 from .control_utils import ControlUtil
 from .db_utils import DBUtils
-from .models import DynamicValueDockerChallenge
 from .redis_utils import RedisUtils
 
 
@@ -60,7 +60,7 @@ def load(app):
         with app.app_context():
             results = DBUtils.get_all_expired_container()
             for r in results:
-                ControlUtil.remove_container(app, r.user_id)
+                ControlUtil.try_remove_container(r.user_id)
 
             configs = DBUtils.get_all_configs()
             containers = DBUtils.get_all_alive_container()

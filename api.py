@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime
 
 from flask import request, current_app
@@ -9,7 +8,6 @@ from CTFd.utils import user as current_user
 from CTFd.utils.decorators import admins_only, authed_only
 from .control_utils import ControlUtil
 from .db_utils import DBUtils
-from .models import DynamicDockerChallenge
 from .redis_utils import RedisUtils
 
 admin_namespace = Namespace("ctfd-whale-admin")
@@ -19,19 +17,21 @@ user_namespace = Namespace("ctfd-whale-user")
 @admin_namespace.errorhandler(Forbidden)
 @user_namespace.errorhandler(Forbidden)
 def handle_forbidden(err):
-    return {
+    data = {
         'success': False,
         'message': 'Please login first'
-    }, 403
+    }
+    return data, 403
 
 
 @admin_namespace.errorhandler
 @user_namespace.errorhandler
 def handle_default(err):
-    return {
+    data = {
         'success': False,
         'message': 'Unexpected things happened'
-    }, 500
+    }
+    return data, 500
 
 
 @admin_namespace.route('/settings')
@@ -79,8 +79,7 @@ class AdminContainers(Resource):
     @admins_only
     def delete():
         user_id = request.args.get('user_id')
-        ControlUtil.remove_container(current_app, user_id)
-        return {'success': True}
+        return {'success': ControlUtil.try_remove_container(user_id)}
 
 
 @user_namespace.route("/container")
@@ -123,7 +122,7 @@ class UserContainers(Resource):
         if ControlUtil.frequency_limit():
             return {'success': False, 'message': 'Frequency limit, You should wait at least 1 min.'}
 
-        ControlUtil.remove_container(current_app, user_id)
+        ControlUtil.try_remove_container(user_id)
         challenge_id = request.args.get('challenge_id')
         ControlUtil.check_challenge(challenge_id, user_id)
 
@@ -131,18 +130,11 @@ class UserContainers(Resource):
         if int(DBUtils.get_config("docker_max_container_count")) <= int(current_count):
             return {'success': False, 'message': 'Max container count exceed.'}
 
-        dynamic_docker_challenge = DynamicDockerChallenge.query \
-            .filter(DynamicDockerChallenge.id == challenge_id) \
-            .first_or_404()
-        flag = "flag{" + str(uuid.uuid4()) + "}"
-        if dynamic_docker_challenge.redirect_type == "http":
-            ControlUtil.add_container(
-                app=current_app, user_id=user_id, challenge_id=challenge_id, flag=flag)
-        else:
-            port = redis_util.get_available_port()
-            ControlUtil.add_container(
-                app=current_app, user_id=user_id, challenge_id=challenge_id, flag=flag, port=port)
-
+        if not ControlUtil.try_add_container(
+                user_id=user_id,
+                challenge_id=challenge_id):
+            redis_util.release_lock()  # not user's fault
+            return {'success': False, 'message': 'No available ports. Please wait for a few minutes.'}
         redis_util.release_lock()
         return {'success': True}
 
@@ -180,7 +172,7 @@ class UserContainers(Resource):
         if ControlUtil.frequency_limit():
             return {'success': False, 'message': 'Frequency limit, You should wait at least 1 min.'}
 
-        if ControlUtil.remove_container(current_app, user_id):
+        if ControlUtil.try_remove_container(user_id):
             redis_util.release_lock()
 
             return {'success': True}
