@@ -79,11 +79,16 @@ class DockerUtils:
                         dns.append(network.attrs['Containers'][name]['IPv4Address'].split('/')[0])
 
         has_processed_main = False
-
-        images = json.loads(
-            container.challenge.docker_image,
-            object_pairs_hook=OrderedDict
-        )
+        try:
+            images = json.loads(
+                container.challenge.docker_image,
+                object_pairs_hook=OrderedDict
+            )
+        except json.JSONDecodeError:
+            raise WhaleError(
+                "Challenge Image Parse Error\n"
+                "plase check the challenge image string"
+            )
         for name, image in images.items():
             if not has_processed_main:
                 container_name = f'{container.user_id}-{container.uuid}'
@@ -119,8 +124,8 @@ class DockerUtils:
             client = docker.DockerClient(base_url=configs.get("docker_api_url"))
         except Exception as e:
             raise WhaleError(
-                'Docker Connection Error' +
-                'Please ensure the docker api url (first config item) is correct' +
+                'Docker Connection Error\n' +
+                'Please ensure the docker api url (first config item) is correct\n' +
                 'if you are using unix:///var/run/docker.sock, check if the socket is correctly mapped'
             )
         for s in client.services.list(filters={'label': f'whale_id={whale_id}'}):

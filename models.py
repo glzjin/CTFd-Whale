@@ -64,7 +64,8 @@ class WhaleContainer(db.Model):
             configs[str(c.key)] = str(c.value)
         access = ''
         if self.challenge.redirect_type == 'http':
-            access = f'http://{self.http_subdomain}{configs.get("frp_http_domain_suffix", "")}'
+            subdomain_host = configs.get("frp_http_domain_suffix", "").lstrip(".")
+            access = f'http://{self.http_subdomain}.{subdomain_host}'
             if configs.get('frp_http_port', '80') != '80':
                 access += ':' + configs.get('frp_http_port')
         elif self.challenge.redirect_type == 'direct':

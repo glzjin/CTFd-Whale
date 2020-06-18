@@ -29,7 +29,7 @@ def load(app):
         setup_default_configs()
     CHALLENGE_CLASSES["dynamic_docker"] = DynamicValueDockerChallenge
     register_plugin_assets_directory(
-        app, base_path="/plugins/ctfd-whale/assets/"
+        app, base_path="/plugins/" + __name__ + "/assets/"
     )
 
     page_blueprint = Blueprint(
@@ -76,10 +76,7 @@ def load(app):
             configs = DBConfig.get_all_configs()
             containers = DBContainer.get_all_alive_container()
 
-            output = configs.get("frp_config_template")
-
-            for c in containers:
-                output += c.frp_config
+            config = ''.join([c.frp_config for c in containers])
 
             try:
                 # you can authorize a connection by setting
@@ -88,9 +85,21 @@ def load(app):
                 if not frp_addr:
                     frp_addr = f'http://{configs.get("frp_api_ip", "frpc")}:{configs.get("frp_api_port", "7400")}'
                     # backward compatibility
-                requests.put(f'{frp_addr.lstrip("/")}/api/config', output, timeout=5)
-                requests.get(f'{frp_addr.lstrip("/")}/api/reload', timeout=5)
-            except requests.RequestException:
+                common = configs.get("frp_config_template")
+                if '[common]' in common:
+                    output = common + config
+                else:
+                    remote = requests.get(f'{frp_addr.lstrip("/")}/api/config')
+                    assert remote.status_code == 200
+                    configs["frp_config_template"] = remote.text
+                    output = remote.text + config
+                assert requests.put(
+                    f'{frp_addr.lstrip("/")}/api/config', output, timeout=5
+                ).status_code == 200
+                assert requests.get(
+                    f'{frp_addr.lstrip("/")}/api/reload', timeout=5
+                ).status_code == 200
+            except (requests.RequestException, AssertionError):
                 raise WhaleError(
                     'frpc request failed\n' +
                     'please check the frp related configs'
