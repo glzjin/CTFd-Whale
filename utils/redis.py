@@ -4,7 +4,7 @@ import docker
 from flask_redis import FlaskRedis
 from redis.exceptions import LockError
 
-from .db_utils import DBContainer, DBConfig
+from .db import DBContainer, DBConfig
 
 
 class RedisUtils(FlaskRedis):

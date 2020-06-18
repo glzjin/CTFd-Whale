@@ -1,7 +1,7 @@
 import datetime
 
 from CTFd.models import db
-from .models import WhaleConfig, WhaleContainer
+from ..models import WhaleConfig, WhaleContainer
 
 
 class DBConfig(dict):
@@ -13,16 +13,15 @@ class DBConfig(dict):
 
     def get(self, k, default=""):
         if k not in self:
-            DBConfig.set_config(k, default)
             self[k] = default
-        return self[k]
+        return super().__getitem__(k)
 
     def __getitem__(self, item):
         return self.get(item)
 
     def __setitem__(self, key, value):
         DBConfig.set_config(key, value)
-        self[key] = value
+        super().__setitem__(key, value)
 
     @staticmethod
     def get_config(key, default=""):
@@ -42,7 +41,7 @@ class DBConfig(dict):
 
     @staticmethod
     def set_all_configs(configs):
-        for c in configs:
+        for c in configs.items():
             q = db.session.query(WhaleConfig)
             q = q.filter(WhaleConfig.key == c[0])
             record = q.one_or_none()
@@ -54,7 +53,6 @@ class DBConfig(dict):
                 config = WhaleConfig(key=c[0], value=c[1])
                 db.session.add(config)
                 db.session.commit()
-        db.session.close()
 
 
 class DBContainer:

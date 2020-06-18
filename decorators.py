@@ -6,7 +6,7 @@ from sqlalchemy.sql import and_
 
 from CTFd.models import Challenges
 from CTFd.utils.user import is_admin, get_current_user
-from .redis_utils import RedisUtils
+from .utils.redis import RedisUtils
 
 
 def challenge_visible(func):

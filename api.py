@@ -6,10 +6,10 @@ from werkzeug.exceptions import Forbidden, NotFound
 
 from CTFd.utils import user as current_user
 from CTFd.utils.decorators import admins_only, authed_only
-from .control_utils import ControlUtil
-from .db_utils import DBContainer, DBConfig
 from .decorators import challenge_visible, frequency_limited
-from .redis_utils import RedisUtils
+from .utils.control import ControlUtil
+from .utils.db import DBContainer, DBConfig
+from .utils.redis import RedisUtils
 
 admin_namespace = Namespace("ctfd-whale-admin")
 user_namespace = Namespace("ctfd-whale-user")
@@ -54,7 +54,7 @@ class AdminSettings(Resource):
     @admins_only
     def patch(self):
         req = request.get_json()
-        DBConfig.set_all_configs(req.items())
+        DBConfig.set_all_configs(req)
         redis_util = RedisUtils(app=current_app)
         redis_util.init_redis_port_sets()
         return {'success': True}
@@ -102,10 +102,10 @@ class AdminContainers(Resource):
 
 
 @user_namespace.route("/container")
-@challenge_visible
 class UserContainers(Resource):
     @staticmethod
     @authed_only
+    @challenge_visible
     def get():
         user_id = current_user.get_current_user().id
         challenge_id = request.args.get('challenge_id')

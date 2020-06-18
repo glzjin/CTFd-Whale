@@ -14,15 +14,10 @@ from CTFd.plugins import (
 from CTFd.plugins.challenges import CHALLENGE_CLASSES
 from .api import *
 from .challenge_type import DynamicValueDockerChallenge
-from .control_utils import ControlUtil
-from .db_utils import DBContainer, DBConfig
-from .redis_utils import RedisUtils
-
-
-class WhaleError(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
-        self.message = msg
+from .utils.control import ControlUtil
+from .utils.db import DBContainer, DBConfig
+from .utils.exceptions import WhaleError
+from .utils.redis import RedisUtils
 
 
 def load(app):

@@ -6,9 +6,9 @@ from collections import OrderedDict
 import docker
 from flask import current_app
 
-from . import WhaleError
-from .db_utils import DBConfig
-from .redis_utils import RedisUtils
+from .db import DBConfig
+from .exceptions import WhaleError
+from .redis import RedisUtils
 
 
 class DockerUtils:
