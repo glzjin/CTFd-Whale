@@ -17,7 +17,12 @@ from .challenge_type import DynamicValueDockerChallenge
 from .control_utils import ControlUtil
 from .db_utils import DBUtils
 from .redis_utils import RedisUtils
-from .utils import WhaleError
+
+
+class WhaleError(Exception):
+    def __init__(self, msg):
+        super().__init__(msg)
+        self.message = msg
 
 
 def load(app):
@@ -75,9 +80,10 @@ def load(app):
                 # why not just request.get(configs.get('frp_url'))?
                 # so we can authorize a connection by setting
                 # frp_url = http://user:pass@ip:port
+                # frp_addr = configs.get("frp_api_url", "http://frpc:7400")
                 frp_addr = f'http://{configs.get("frp_api_ip", "frpc")}:{configs.get("frp_api_port", "7400")}'
-                requests.put(f'{frp_addr}/api/config', output, timeout=5)
-                requests.get(f'{frp_addr}/api/reload', timeout=5)
+                requests.put(f'{frp_addr.lstrip("/")}/api/config', output, timeout=5)
+                requests.get(f'{frp_addr.lstrip("/")}/api/reload', timeout=5)
             except requests.RequestException:
                 raise WhaleError(
                     'frpc request failed\n' +

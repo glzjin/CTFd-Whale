@@ -1,12 +1,9 @@
-import time
+import datetime
 import traceback
 
-from flask import session, current_app
-from sqlalchemy.sql import and_
+from flask import current_app
 
-from CTFd.models import Challenges, Users
-from CTFd.utils.user import is_admin
-from .db_utils import DBUtils
+from .db_utils import DBUtils, db
 from .docker_utils import DockerUtils
 from .redis_utils import RedisUtils
 
@@ -16,16 +13,16 @@ class ControlUtil:
     def try_add_container(user_id, challenge_id):
         port = RedisUtils(app=current_app).get_available_port()
         if not port:
-            return False
+            return False, 'No available ports. Please wait for a few minutes.'
         container = DBUtils.create_container_record(user_id, challenge_id, port)
         DockerUtils.add_container(container)
-        return True
+        return True, 'Container created'
 
     @staticmethod
     def try_remove_container(user_id):
         container = DBUtils.get_current_containers(user_id=user_id)
         if not container:
-            return False
+            return False, 'No such container'
         for _ in range(3):  # configurable? as "onerror_retry_cnt"
             try:
                 DockerUtils.remove_container(container)
@@ -33,31 +30,25 @@ class ControlUtil:
                     redis_util = RedisUtils(app=current_app)
                     redis_util.add_available_port(container.port)
                 DBUtils.remove_container_record(user_id)
-                return True
+                return True, 'Container destroyed'
             except:
                 traceback.print_exc()
-        return False
+        return False, 'Failed when destroying instance, please contact admin!'
 
     @staticmethod
-    def check_challenge(challenge_id):
-        if is_admin():
-            Challenges.query.filter(
-                Challenges.id == challenge_id
-            ).first_or_404()
+    def try_renew_container(user_id, challenge_id):
+        container = DBUtils.get_current_containers(user_id)
+        if not container or container.challenge_id != challenge_id:
+            return False, 'No such container'
+        timeout = int(DBUtils.get_config("docker_timeout", "3600"))
+        container.start_time = container.start_time + \
+                               datetime.timedelta(seconds=timeout)
+        if container.start_time > datetime.datetime.now():
+            container.start_time = datetime.datetime.now()
+            # race condition? useless maybe?
+            # useful when docker_timeout < poll timeout (10 seconds)
+            # doesn't make any sense
         else:
-            Challenges.query.filter(
-                Challenges.id == challenge_id,
-                and_(Challenges.state != "hidden", Challenges.state != "locked"),
-            ).first_or_404()
-
-    @staticmethod
-    def frequency_limit():
-        if "limit" not in session:
-            session["limit"] = int(time.time())
-            return False
-
-        if int(time.time()) - session["limit"] < 60:
-            return True
-
-        session["limit"] = int(time.time())
-        return False
+            return False, 'Invalid container'
+        container.renew_count += 1
+        db.session.commit()

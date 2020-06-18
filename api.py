@@ -1,25 +1,40 @@
 from datetime import datetime
 
-from flask import request, current_app
+from flask import request, current_app, abort
 from flask_restx import Namespace, Resource
-from werkzeug.exceptions import Forbidden
+from werkzeug.exceptions import Forbidden, NotFound
 
 from CTFd.utils import user as current_user
 from CTFd.utils.decorators import admins_only, authed_only
 from .control_utils import ControlUtil
 from .db_utils import DBUtils
+from .decorators import challenge_visible, frequency_limited
 from .redis_utils import RedisUtils
 
 admin_namespace = Namespace("ctfd-whale-admin")
 user_namespace = Namespace("ctfd-whale-user")
 
 
+@admin_namespace.errorhandler(NotFound)
+@user_namespace.errorhandler(NotFound)
+def handle_notfound(err):
+    data = {
+        'success': False,
+        'message': err.message
+    }
+    return data, 404
+
+
 @admin_namespace.errorhandler(Forbidden)
 @user_namespace.errorhandler(Forbidden)
 def handle_forbidden(err):
+    if 'You don\'t have the permission' not in err.description:
+        message = err.description
+    else:
+        message = 'Please login first'
     data = {
         'success': False,
-        'message': 'Please login first'
+        'message': message
     }
     return data, 403
 
@@ -71,109 +86,93 @@ class AdminContainers(Resource):
     def patch():
         user_id = request.args.get('user_id')
         challenge_id = request.args.get('challenge_id')
-        DBUtils.renew_current_container(
-            user_id=user_id, challenge_id=challenge_id)
-        return {'success': True}
+        result, message = ControlUtil.try_renew_container(
+            user_id=user_id, challenge_id=challenge_id
+        )
+        if not result:
+            abort(403, message)
+        return {'success': True, 'message': message}
 
     @staticmethod
     @admins_only
     def delete():
         user_id = request.args.get('user_id')
-        return {'success': ControlUtil.try_remove_container(user_id)}
+        result, message = ControlUtil.try_remove_container(user_id)
+        return {'success': result, 'message': message}
 
 
 @user_namespace.route("/container")
+@challenge_visible
 class UserContainers(Resource):
     @staticmethod
     @authed_only
     def get():
         user_id = current_user.get_current_user().id
         challenge_id = request.args.get('challenge_id')
-        ControlUtil.check_challenge(challenge_id)
-        data = DBUtils.get_current_containers(user_id=user_id)
-        timeout = int(DBUtils.get_config("docker_timeout", "3600"))
-        if data is not None:
-            if int(data.challenge_id) != int(challenge_id):
-                return {
-                    'success': False,
-                    'message': f'Container started but not from this challenge ({data.challenge_id})'
-                }
-            return {
-                'success': True,
-                'data': {
-                    'lan_domain': str(user_id) + "-" + data.uuid,
-                    'type': 'http',
-                    'user_access': data.user_access,
-                    'remaining_time': timeout - (datetime.now() - data.start_time).seconds,
-                }
-            }
-        else:
+        container = DBUtils.get_current_containers(user_id=user_id)
+        if not container:
             return {'success': True, 'data': {}}
+        timeout = int(DBUtils.get_config("docker_timeout", "3600"))
+        if int(container.challenge_id) != int(challenge_id):
+            return {
+                'success': False,
+                'message': f'Container started but not from this challenge ({container.challenge_id})'
+            }
+        return {
+            'success': True,
+            'data': {
+                'lan_domain': str(user_id) + "-" + container.uuid,
+                'type': 'http',
+                'user_access': container.user_access,
+                'remaining_time': timeout - (datetime.now() - container.start_time).seconds,
+            }
+        }
 
     @staticmethod
     @authed_only
+    @challenge_visible
+    @frequency_limited
     def post():
         user_id = current_user.get_current_user().id
-        redis_util = RedisUtils(app=current_app, user_id=user_id)
-
-        if not redis_util.acquire_lock():
-            return {'success': False, 'message': 'Request Too Fast!'}
-
-        if ControlUtil.frequency_limit():
-            return {'success': False, 'message': 'Frequency limit, You should wait at least 1 min.'}
-
         ControlUtil.try_remove_container(user_id)
-        challenge_id = request.args.get('challenge_id')
-        ControlUtil.check_challenge(challenge_id)
 
         current_count = DBUtils.get_all_alive_container_count()
         if int(DBUtils.get_config("docker_max_container_count")) <= int(current_count):
-            return {'success': False, 'message': 'Max container count exceed.'}
+            abort(403, 'Max container count exceed.')
 
-        if not ControlUtil.try_add_container(
-                user_id=user_id,
-                challenge_id=challenge_id):
-            return {'success': False, 'message': 'No available ports. Please wait for a few minutes.'}
-        redis_util.release_lock()
-        return {'success': True}
+        challenge_id = request.args.get('challenge_id')
+        result, message = ControlUtil.try_add_container(
+            user_id=user_id,
+            challenge_id=challenge_id
+        )
+        if not result:
+            abort(403, message)
+        return {'success': True, 'message': message}
 
     @staticmethod
     @authed_only
+    @challenge_visible
+    @frequency_limited
     def patch():
         user_id = current_user.get_current_user().id
-        redis_util = RedisUtils(app=current_app, user_id=user_id)
-        if not redis_util.acquire_lock():
-            return {'success': False, 'message': 'Request Too Fast!'}
-
-        if ControlUtil.frequency_limit():
-            return {'success': False, 'message': 'Frequency limit, You should wait at least 1 min.'}
-
-        challenge_id = request.args.get('challenge_id')
-        ControlUtil.check_challenge(challenge_id)
         docker_max_renew_count = int(DBUtils.get_config("docker_max_renew_count"))
         container = DBUtils.get_current_containers(user_id)
         if container is None:
-            return {'success': False, 'message': 'Instance not found.'}
+            abort(403, 'Instance not found.')
         if container.renew_count >= docker_max_renew_count:
-            return {'success': False, 'message': 'Max renewal times exceed.'}
-        DBUtils.renew_current_container(user_id=user_id, challenge_id=challenge_id)
-        redis_util.release_lock()
-        return {'success': True}
+            abort(403, 'Max renewal count exceed.')
+        challenge_id = request.args.get('challenge_id')
+        result, message = ControlUtil.try_renew_container(
+            user_id=user_id, challenge_id=challenge_id
+        )
+        return {'success': True, 'message': message}
 
     @staticmethod
     @authed_only
+    @frequency_limited
     def delete():
         user_id = current_user.get_current_user().id
-        redis_util = RedisUtils(app=current_app, user_id=user_id)
-        if not redis_util.acquire_lock():
-            return {'success': False, 'message': 'Request Too Fast!'}
-
-        if ControlUtil.frequency_limit():
-            return {'success': False, 'message': 'Frequency limit, You should wait at least 1 min.'}
-
-        if ControlUtil.try_remove_container(user_id):
-            redis_util.release_lock()
-
-            return {'success': True}
-        else:
-            return {'success': False, 'message': 'Failed when destroy instance, please contact admin!'}
+        result, message = ControlUtil.try_remove_container(user_id)
+        if not result:
+            abort(403, message)
+        return {'success': True, 'message': message}

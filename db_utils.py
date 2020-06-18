@@ -1,5 +1,4 @@
 import datetime
-import uuid
 
 from CTFd.models import db
 from .models import WhaleConfig, WhaleContainer
@@ -64,27 +63,6 @@ class DBUtils:
         q.delete()
         db.session.commit()
         db.session.close()
-
-    @staticmethod
-    def renew_current_container(user_id, challenge_id):
-        q = db.session.query(WhaleContainer)
-        q = q.filter(WhaleContainer.user_id == user_id)
-        container = q.filter(
-            WhaleContainer.challenge_id == challenge_id
-        ).first()
-
-        timeout = int(DBUtils.get_config("docker_timeout", "3600"))
-
-        if not container:
-            return
-        container.start_time = container.start_time + \
-            datetime.timedelta(seconds=timeout)
-
-        if container.start_time > datetime.datetime.now():
-            container.start_time = datetime.datetime.now()
-
-        container.renew_count += 1
-        db.session.commit()
 
     @staticmethod
     def get_all_expired_container():
