@@ -1,7 +1,10 @@
 from __future__ import division  # Use floating point for math calculations
 
+import random
 import uuid
 from datetime import datetime
+
+from jinja2 import Template
 
 from CTFd.models import db
 
@@ -36,13 +39,32 @@ class WhaleContainer(db.Model):
     )
 
     @property
+    def http_subdomain(self):
+        from .utils.db import DBConfig
+        return Template(DBConfig.get_config(
+            'template_http_subdomain', '{{ container.uuid }}'
+        )).render(container=self)
+
+    def __init__(self, user_id, challenge_id, port):
+        from .utils.db import DBConfig
+        self.user_id = user_id
+        self.challenge_id = challenge_id
+        self.start_time = datetime.now()
+        self.renew_count = 0
+        self.uuid = str(uuid.uuid4())
+        self.port = port
+        self.flag = Template(DBConfig.get_config(
+            'template_chall_flag', '{{ "flag{"+uuid.uuid4()|string+"}" }}'
+        )).render(container=self, uuid=uuid, random=random)
+
+    @property
     def user_access(self):
         configs = {}
         for c in WhaleConfig.query.all():
             configs[str(c.key)] = str(c.value)
         access = ''
         if self.challenge.redirect_type == 'http':
-            access = f'http://{self.uuid}{configs.get("frp_http_domain_suffix", "")}'
+            access = f'http://{self.http_subdomain}{configs.get("frp_http_domain_suffix", "")}'
             if configs.get('frp_http_port', '80') != '80':
                 access += ':' + configs.get('frp_http_port')
         elif self.challenge.redirect_type == 'direct':
@@ -60,7 +82,7 @@ class WhaleContainer(db.Model):
 type = http
 local_ip = {str(self.user_id)}-{self.uuid}
 local_port = {self.challenge.redirect_port}
-custom_domains = {self.uuid}{configs.get('frp_http_domain_suffix', '')}
+subdomain = {self.http_subdomain}
 use_compression = true
 """
         elif self.challenge.redirect_type == 'direct':
@@ -79,15 +101,6 @@ local_port = {self.challenge.redirect_port}
 remote_port = {self.port}
 use_compression = true
 """
-
-    def __init__(self, user_id, challenge_id, port):
-        self.user_id = user_id
-        self.challenge_id = challenge_id
-        self.start_time = datetime.now()
-        self.renew_count = 0
-        self.flag = "flag{" + str(uuid.uuid4()) + "}"
-        self.uuid = str(uuid.uuid4())
-        self.port = port
 
     def __repr__(self):
         return "<WhaleContainer ID:(0) {1} {2} {3} {4}>".format(self.id, self.user_id, self.challenge_id,

@@ -52,3 +52,4 @@ class ControlUtil:
             return False, 'Invalid container'
         container.renew_count += 1
         db.session.commit()
+        return True, 'Container Renewed'

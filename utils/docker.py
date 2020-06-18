@@ -30,7 +30,6 @@ class DockerUtils:
 
     @staticmethod
     def _create_standalone_container(client, container, configs):
-        print(RedisUtils(app=current_app).get_available_network_range())
         dns = configs.get("docker_dns", "").split(",")
         node = DockerUtils.choose_node(
             container.challenge.docker_image,

@@ -149,11 +149,11 @@ class UserContainers(Resource):
             abort(403, 'Instance not found.')
         if container.renew_count >= docker_max_renew_count:
             abort(403, 'Max renewal count exceed.')
-        challenge_id = request.args.get('challenge_id')
+        challenge_id = int(request.args.get('challenge_id'))
         result, message = ControlUtil.try_renew_container(
             user_id=user_id, challenge_id=challenge_id
         )
-        return {'success': True, 'message': message}
+        return {'success': result, 'message': message}
 
     @staticmethod
     @authed_only

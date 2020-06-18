@@ -41,12 +41,16 @@
                                 <li class="nav-item">
                                     <a class="nav-link" data-toggle="pill" href="#limits">Limits</a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-toggle="pill" href="#challenges">Challenges</a>
+                                </li>
                             </ul>
 
                             <div class="tab-content">
                                 {% include "config/docker.config.html" %}
                                 {% include "config/frp.config.html" %}
                                 {% include "config/limits.config.html" %}
+                                {% include "config/challenges.config.html" %}
                             </div>
                             <input hidden name="nonce" value="{{ nonce }}"/>
                         </form>
