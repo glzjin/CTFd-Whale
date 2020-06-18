@@ -7,14 +7,14 @@ import docker
 from flask import current_app
 
 from . import WhaleError
-from .db_utils import DBUtils
+from .db_utils import DBConfig
 from .redis_utils import RedisUtils
 
 
 class DockerUtils:
     @staticmethod
     def add_container(container):
-        configs = DBUtils.get_all_configs()
+        configs = DBConfig.get_all_configs()
         try:
             client = docker.DockerClient(base_url=configs["docker_api_url"])
         except Exception as e:
@@ -112,7 +112,7 @@ class DockerUtils:
 
     @staticmethod
     def remove_container(container):
-        configs = DBUtils.get_all_configs()
+        configs = DBConfig.get_all_configs()
 
         whale_id = f'{container.user_id}-{container.uuid}'
 

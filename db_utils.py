@@ -4,24 +4,44 @@ from CTFd.models import db
 from .models import WhaleConfig, WhaleContainer
 
 
-class DBUtils:
+class DBConfig(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        configs = WhaleConfig.query.all()
+        for c in configs:
+            self[str(c.key)] = str(c.value)
+
+    def get(self, k, default=""):
+        if k not in self:
+            DBConfig.set_config(k, default)
+            self[k] = default
+        return self[k]
+
+    def __getitem__(self, item):
+        return self.get(item)
+
+    def __setitem__(self, key, value):
+        DBConfig.set_config(key, value)
+        self[key] = value
+
     @staticmethod
     def get_config(key, default=""):
         result = WhaleConfig.query.filter_by(key=key).first()
-        return result.value if result else default
+        if not result:
+            DBConfig.set_config(key, default)
+            return default
+        return result.value
+
+    @staticmethod
+    def set_config(key, value):
+        DBConfig.set_all_configs({key: value})
 
     @staticmethod
     def get_all_configs():
-        configs = WhaleConfig.query.all()
-        result = {}
-
-        for c in configs:
-            result[str(c.key)] = str(c.value)
-
-        return result
+        return DBConfig()
 
     @staticmethod
-    def save_all_configs(configs):
+    def set_all_configs(configs):
         for c in configs:
             q = db.session.query(WhaleConfig)
             q = q.filter(WhaleConfig.key == c[0])
@@ -36,6 +56,8 @@ class DBUtils:
                 db.session.commit()
         db.session.close()
 
+
+class DBContainer:
     @staticmethod
     def create_container_record(user_id, challenge_id, port=0):
         container = WhaleContainer(user_id=user_id, challenge_id=challenge_id, port=port)
@@ -66,7 +88,7 @@ class DBUtils:
 
     @staticmethod
     def get_all_expired_container():
-        timeout = int(DBUtils.get_config("docker_timeout", "3600"))
+        timeout = int(DBConfig.get_config("docker_timeout", "3600"))
 
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.start_time < datetime.datetime.now() - datetime.timedelta(seconds=timeout))
@@ -74,7 +96,7 @@ class DBUtils:
 
     @staticmethod
     def get_all_alive_container():
-        timeout = int(DBUtils.get_config("docker_timeout", "3600"))
+        timeout = int(DBConfig.get_config("docker_timeout", "3600"))
 
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.start_time >= datetime.datetime.now() - datetime.timedelta(seconds=timeout))
@@ -87,7 +109,7 @@ class DBUtils:
 
     @staticmethod
     def get_all_alive_container_page(page_start, page_end):
-        timeout = int(DBUtils.get_config("docker_timeout", "3600"))
+        timeout = int(DBConfig.get_config("docker_timeout", "3600"))
 
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.start_time >= datetime.datetime.now() - datetime.timedelta(seconds=timeout))
@@ -96,7 +118,7 @@ class DBUtils:
 
     @staticmethod
     def get_all_alive_container_count():
-        timeout = int(DBUtils.get_config("docker_timeout", "3600"))
+        timeout = int(DBConfig.get_config("docker_timeout", "3600"))
 
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.start_time >= datetime.datetime.now() - datetime.timedelta(seconds=timeout))

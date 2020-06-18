@@ -7,7 +7,7 @@ from werkzeug.exceptions import Forbidden, NotFound
 from CTFd.utils import user as current_user
 from CTFd.utils.decorators import admins_only, authed_only
 from .control_utils import ControlUtil
-from .db_utils import DBUtils
+from .db_utils import DBContainer, DBConfig
 from .decorators import challenge_visible, frequency_limited
 from .redis_utils import RedisUtils
 
@@ -54,7 +54,7 @@ class AdminSettings(Resource):
     @admins_only
     def patch(self):
         req = request.get_json()
-        DBUtils.save_all_configs(req.items())
+        DBConfig.set_all_configs(req.items())
         redis_util = RedisUtils(app=current_app)
         redis_util.init_redis_port_sets()
         return {'success': True}
@@ -70,8 +70,8 @@ class AdminContainers(Resource):
         page_start = results_per_page * (page - 1)
         page_end = results_per_page * (page - 1) + results_per_page
 
-        count = DBUtils.get_all_alive_container_count()
-        containers = DBUtils.get_all_alive_container_page(
+        count = DBContainer.get_all_alive_container_count()
+        containers = DBContainer.get_all_alive_container_page(
             page_start, page_end)
 
         return {'success': True, 'data': {
@@ -109,10 +109,10 @@ class UserContainers(Resource):
     def get():
         user_id = current_user.get_current_user().id
         challenge_id = request.args.get('challenge_id')
-        container = DBUtils.get_current_containers(user_id=user_id)
+        container = DBContainer.get_current_containers(user_id=user_id)
         if not container:
             return {'success': True, 'data': {}}
-        timeout = int(DBUtils.get_config("docker_timeout", "3600"))
+        timeout = int(DBConfig.get_config("docker_timeout", "3600"))
         if int(container.challenge_id) != int(challenge_id):
             return {
                 'success': False,
@@ -136,8 +136,8 @@ class UserContainers(Resource):
         user_id = current_user.get_current_user().id
         ControlUtil.try_remove_container(user_id)
 
-        current_count = DBUtils.get_all_alive_container_count()
-        if int(DBUtils.get_config("docker_max_container_count")) <= int(current_count):
+        current_count = DBContainer.get_all_alive_container_count()
+        if int(DBConfig.get_config("docker_max_container_count")) <= int(current_count):
             abort(403, 'Max container count exceed.')
 
         challenge_id = request.args.get('challenge_id')
@@ -155,8 +155,8 @@ class UserContainers(Resource):
     @frequency_limited
     def patch():
         user_id = current_user.get_current_user().id
-        docker_max_renew_count = int(DBUtils.get_config("docker_max_renew_count"))
-        container = DBUtils.get_current_containers(user_id)
+        docker_max_renew_count = int(DBConfig.get_config("docker_max_renew_count", 5))
+        container = DBContainer.get_current_containers(user_id)
         if container is None:
             abort(403, 'Instance not found.')
         if container.renew_count >= docker_max_renew_count:

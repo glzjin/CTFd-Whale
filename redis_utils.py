@@ -4,7 +4,7 @@ import docker
 from flask_redis import FlaskRedis
 from redis.exceptions import LockError
 
-from .db_utils import DBUtils
+from .db_utils import DBContainer, DBConfig
 
 
 class RedisUtils(FlaskRedis):
@@ -16,12 +16,12 @@ class RedisUtils(FlaskRedis):
         self.global_network_key = "ctfd_whale-network-set"
 
     def init_redis_port_sets(self):
-        configs = DBUtils.get_all_configs()
+        configs = DBConfig.get_all_configs()
 
         self.delete(self.global_port_key)
         self.delete(self.global_network_key)
 
-        containers = DBUtils.get_all_container()
+        containers = DBContainer.get_all_container()
         used_port_list = []
         for container in containers:
             if container.port != 0:

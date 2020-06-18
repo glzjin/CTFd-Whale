@@ -15,7 +15,7 @@ from CTFd.plugins.challenges import CHALLENGE_CLASSES
 from .api import *
 from .challenge_type import DynamicValueDockerChallenge
 from .control_utils import ControlUtil
-from .db_utils import DBUtils
+from .db_utils import DBContainer, DBConfig
 from .redis_utils import RedisUtils
 
 
@@ -49,7 +49,7 @@ def load(app):
     @page_blueprint.route('/admin/settings', methods=['GET'])
     @admins_only
     def admin_list_configs():
-        configs = DBUtils.get_all_configs()
+        configs = DBConfig.get_all_configs()
         return render_template('config/config.html', configs=configs)
 
     @page_blueprint.route("/admin/containers")
@@ -64,12 +64,12 @@ def load(app):
 
     def auto_clean_container():
         with app.app_context():
-            results = DBUtils.get_all_expired_container()
+            results = DBContainer.get_all_expired_container()
             for r in results:
                 ControlUtil.try_remove_container(r.user_id)
 
-            configs = DBUtils.get_all_configs()
-            containers = DBUtils.get_all_alive_container()
+            configs = DBConfig.get_all_configs()
+            containers = DBContainer.get_all_alive_container()
 
             output = configs.get("frp_config_template")
 
