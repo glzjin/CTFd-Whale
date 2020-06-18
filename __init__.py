@@ -19,11 +19,14 @@ from .utils.control import ControlUtil
 from .utils.db import DBContainer, DBConfig
 from .utils.exceptions import WhaleError
 from .utils.redis import RedisUtils
+from .utils.setup import setup_default_configs
 
 
 def load(app):
     # upgrade()
     app.db.create_all()
+    if not DBConfig.get_config("setup"):
+        setup_default_configs()
     CHALLENGE_CLASSES["dynamic_docker"] = DynamicValueDockerChallenge
     register_plugin_assets_directory(
         app, base_path="/plugins/ctfd-whale/assets/"

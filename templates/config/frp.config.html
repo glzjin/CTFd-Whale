@@ -32,6 +32,7 @@
                   name="frp_config_template"
         >{{ frpc_template }}</textarea>
     </div>
+    {% if frpc_template %}
     <div class="form-group">
         <label for="frps-config-template">
             Frps config template [generated]
@@ -51,7 +52,7 @@ vhost_http_port = {{ configs.get('frp_http_port') }}
 subdomain_host = {{ configs.get('frp_http_domain_suffix').lstrip('.') }}
 </textarea>
     </div>
-
+    {% endif %}
     <div class="submit-row float-right">
         <button type="submit" tabindex="0" class="btn btn-md btn-primary btn-outlined">
             Submit
