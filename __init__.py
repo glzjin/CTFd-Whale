@@ -3,7 +3,7 @@ from __future__ import division  # Use floating point for math calculations
 import fcntl
 
 import requests
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, session, current_app
 from flask_apscheduler import APScheduler
 
 from CTFd.api import CTFd_API_v1
@@ -12,6 +12,7 @@ from CTFd.plugins import (
     register_admin_plugin_menu_bar,
 )
 from CTFd.plugins.challenges import CHALLENGE_CLASSES
+from CTFd.utils.security.csrf import generate_nonce
 from .api import *
 from .challenge_type import DynamicValueDockerChallenge
 from .utils.control import ControlUtil
@@ -41,9 +42,15 @@ def load(app):
     CTFd_API_v1.add_namespace(admin_namespace, path="/plugins/ctfd-whale/admin")
     CTFd_API_v1.add_namespace(user_namespace, path="/plugins/ctfd-whale")
 
-    @page_blueprint.route('/admin/settings', methods=['GET'])
+    @page_blueprint.route('/admin/settings', methods=['GET', 'POST'])
     @admins_only
     def admin_list_configs():
+        if request.method == 'POST':
+            data = request.form.to_dict()
+            data.pop('nonce')
+            DBConfig.set_all_configs(data)
+            RedisUtils(app=current_app).init_redis_port_sets()
+        session["nonce"] = generate_nonce()
         configs = DBConfig.get_all_configs()
         return render_template('config/config.html', configs=configs)
 
@@ -72,11 +79,12 @@ def load(app):
                 output += c.frp_config
 
             try:
-                # why not just request.get(configs.get('frp_url'))?
-                # so we can authorize a connection by setting
+                # you can authorize a connection by setting
                 # frp_url = http://user:pass@ip:port
-                # frp_addr = configs.get("frp_api_url", "http://frpc:7400")
-                frp_addr = f'http://{configs.get("frp_api_ip", "frpc")}:{configs.get("frp_api_port", "7400")}'
+                frp_addr = configs.get("frp_api_url")
+                if not frp_addr:
+                    frp_addr = f'http://{configs.get("frp_api_ip", "frpc")}:{configs.get("frp_api_port", "7400")}'
+                    # backward compatibility
                 requests.put(f'{frp_addr.lstrip("/")}/api/config', output, timeout=5)
                 requests.get(f'{frp_addr.lstrip("/")}/api/reload', timeout=5)
             except requests.RequestException:

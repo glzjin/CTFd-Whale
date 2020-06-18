@@ -28,48 +28,31 @@
                 {% endfor %}
 
                 <div class="tab-content">
-                    {% include "config/form.html" %}
+                    <div role="tabpanel" class="tab-pane config-section active" id="settings">
+                        <form method="POST" accept-charset="utf-8"
+                              class="form-horizontal">
+                            <ul class="nav nav-pills mb-4">
+                                <li class="nav-item">
+                                    <a class="nav-link active" data-toggle="pill" href="#docker">Docker</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-toggle="pill" href="#frp">Frp</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-toggle="pill" href="#limits">Limits</a>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content">
+                                {% include "config/docker.config.html" %}
+                                {% include "config/frp.config.html" %}
+                                {% include "config/limits.config.html" %}
+                            </div>
+                            <input hidden name="nonce" value="{{ nonce }}"/>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-{% endblock %}
-
-{% block scripts %}
-    <script>
-        if ($ === undefined) $ = CTFd.lib.$;
-
-        function update_configs(obj) {
-            Object.keys(obj).forEach(function (x) {
-                if (obj[x] === "true") {
-                    obj[x] = true;
-                } else if (obj[x] === "false") {
-                    obj[x] = false;
-                }
-            });
-
-            CTFd.fetch("/api/v1/plugins/ctfd-whale/admin/settings", {
-                method: "PATCH",
-                credentials: "same-origin",
-                headers: {
-                    "Accept": "application/json",
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(obj)
-            })
-                .then(function (response) {
-                    return response.json();
-                })
-                .then(function (data) {
-                    window.location.reload();
-                });
-        }
-
-        $(function () {
-            $(".config-section > form:not(.form-upload)").submit(function (e) {
-                e.preventDefault();
-                update_configs($(this).serializeJSON());
-            });
-        });
-    </script>
 {% endblock %}

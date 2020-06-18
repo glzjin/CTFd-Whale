@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import request, current_app, abort
+from flask import request, abort
 from flask_restx import Namespace, Resource
 from werkzeug.exceptions import Forbidden, NotFound
 
@@ -9,7 +9,6 @@ from CTFd.utils.decorators import admins_only, authed_only
 from .decorators import challenge_visible, frequency_limited
 from .utils.control import ControlUtil
 from .utils.db import DBContainer, DBConfig
-from .utils.redis import RedisUtils
 
 admin_namespace = Namespace("ctfd-whale-admin")
 user_namespace = Namespace("ctfd-whale-user")
@@ -47,17 +46,6 @@ def handle_default(err):
         'message': 'Unexpected things happened'
     }
     return data, 500
-
-
-@admin_namespace.route('/settings')
-class AdminSettings(Resource):
-    @admins_only
-    def patch(self):
-        req = request.get_json()
-        DBConfig.set_all_configs(req)
-        redis_util = RedisUtils(app=current_app)
-        redis_util.init_redis_port_sets()
-        return {'success': True}
 
 
 @admin_namespace.route('/container')
