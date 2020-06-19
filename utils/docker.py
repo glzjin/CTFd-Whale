@@ -71,6 +71,8 @@ class DockerUtils:
         dns = []
         containers = configs.get("docker_auto_connect_containers", "").split(",")
         for c in containers:
+            if not c:
+                continue
             network.connect(c)
             if "dns" in c:
                 network.reload()
@@ -90,7 +92,7 @@ class DockerUtils:
                 "plase check the challenge image string"
             )
         for name, image in images.items():
-            if not has_processed_main:
+            if has_processed_main:
                 container_name = f'{container.user_id}-{container.uuid}'
             else:
                 container_name = f'{container.user_id}-{uuid.uuid4()}'
@@ -134,7 +136,7 @@ class DockerUtils:
         networks = client.networks.list(names=[whale_id])
         if len(networks) > 0:  # is grouped containers
             auto_containers = configs.get("docker_auto_connect_containers", "").split(",")
-            redis_util = RedisUtils(current_app)
+            redis_util = RedisUtils(app=current_app)
             for network in networks:
                 for container in auto_containers:
                     try:
