@@ -1,31 +1,30 @@
 # CTFd-Whale
 
-## [中文README](README.zh-cn.md)
+能够支持题目容器化部署的CTFd插件
 
-A plugin that empowers CTFd to bring up separate environments for each user
+## 功能
 
-## Features
+- 利用`frp`与`docker swarm`做到多容器部署
+- web题目支持利用frp的subdomain实现每个用户单独的域名访问
+- 参赛选手一键启动题目环境，支持容器续期
+- 自动生成随机flag，并通过环境变量传入容器
+- 管理员可以在后台查看启动的容器
+- 支持自定义flag生成方式与web题目子域名生成方式
 
-- Deploys containers with `frp` and `docker swarm`
-- Supports subdomain access by utilizing `frp`
-- Contestants can start/renew/destroy their environments with a single click
-- flags and subdomains are generated automatically with configurable rules
-- Administrators can get a full list of running containers, with full control over them.
+## 使用方式
 
-## Installation & Usage
-
-refer to [INSTALL.md](INSTALL.md)
+请参考[INSTALL.zh-cn.md](INSTALL.zh-cn.md)
 
 ## Demo
 
 [BUUCTF](https://buuoj.cn)
 
-## Third-party Introductions (zh-CN)
+## 第三方使用说明
 
 - [CTFd-Whale 推荐部署实践](https://www.zhaoj.in/read-6333.html)
 - [手把手教你如何建立一个支持ctf动态独立靶机的靶场（ctfd+ctfd-whale)](https://blog.csdn.net/fjh1997/article/details/100850756)
 
-## Screenshots
+## 使用案例
 
 ![](https://www.zhaoj.in/wp-content/uploads/2019/08/1565947849bb2f3ed7912fb85afbbf3e6135cb89ca.png)
 
@@ -35,6 +34,6 @@ refer to [INSTALL.md](INSTALL.md)
 
 ![](https://www.zhaoj.in/wp-content/uploads/2019/08/1565923903609e6c236759a5663be8e0fb57904482.png)
 
-## Twin Project
+## 友情链接
 
 - [CTFd-Owl](https://github.com/D0g3-Lab/H1ve/tree/master/CTFd/plugins/ctfd-owl) (支持部署compose)
