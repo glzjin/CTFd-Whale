@@ -20,7 +20,7 @@ from CTFd.utils import user as current_user
 from CTFd.utils.modes import get_model
 from CTFd.utils.uploads import delete_file
 from CTFd.utils.user import get_ip
-from .models import WhaleContainer
+from .models import WhaleContainer, DynamicDockerChallenge
 
 
 class DynamicValueDockerChallenge(BaseChallenge):
@@ -271,23 +271,3 @@ class DynamicValueDockerChallenge(BaseChallenge):
         db.session.add(wrong)
         db.session.commit()
         db.session.close()
-
-
-class DynamicDockerChallenge(Challenges):
-    __mapper_args__ = {"polymorphic_identity": "dynamic_docker"}
-    id = db.Column(None, db.ForeignKey("challenges.id"), primary_key=True)
-
-    initial = db.Column(db.Integer, default=0)
-    minimum = db.Column(db.Integer, default=0)
-    decay = db.Column(db.Integer, default=0)
-    memory_limit = db.Column(db.Text, default="128m")
-    cpu_limit = db.Column(db.Float, default=0.5)
-    dynamic_score = db.Column(db.Integer, default=0)
-
-    docker_image = db.Column(db.Text, default=0)
-    redirect_type = db.Column(db.Text, default=0)
-    redirect_port = db.Column(db.Integer, default=0)
-
-    def __init__(self, *args, **kwargs):
-        super(DynamicDockerChallenge, self).__init__(**kwargs)
-        self.initial = kwargs["value"]

@@ -6,7 +6,7 @@ from datetime import datetime
 
 from jinja2 import Template
 
-from CTFd.models import db
+from CTFd.models import db, Challenges
 
 
 class WhaleConfig(db.Model):
@@ -19,6 +19,26 @@ class WhaleConfig(db.Model):
 
     def __repr__(self):
         return "<WhaleConfig (0) {1}>".format(self.key, self.value)
+
+
+class DynamicDockerChallenge(Challenges):
+    __mapper_args__ = {"polymorphic_identity": "dynamic_docker"}
+    id = db.Column(None, db.ForeignKey("challenges.id"), primary_key=True)
+
+    initial = db.Column(db.Integer, default=0)
+    minimum = db.Column(db.Integer, default=0)
+    decay = db.Column(db.Integer, default=0)
+    memory_limit = db.Column(db.Text, default="128m")
+    cpu_limit = db.Column(db.Float, default=0.5)
+    dynamic_score = db.Column(db.Integer, default=0)
+
+    docker_image = db.Column(db.Text, default=0)
+    redirect_type = db.Column(db.Text, default=0)
+    redirect_port = db.Column(db.Integer, default=0)
+
+    def __init__(self, *args, **kwargs):
+        super(DynamicDockerChallenge, self).__init__(**kwargs)
+        self.initial = kwargs["value"]
 
 
 class WhaleContainer(db.Model):
@@ -35,7 +55,7 @@ class WhaleContainer(db.Model):
     # Relationships
     user = db.relationship("Users", foreign_keys="WhaleContainer.user_id", lazy="select")
     challenge = db.relationship(
-        "Challenges", foreign_keys="WhaleContainer.challenge_id", lazy="select"
+        "DynamicDockerChallenge", foreign_keys="WhaleContainer.challenge_id", lazy="select"
     )
 
     @property
@@ -69,7 +89,7 @@ class WhaleContainer(db.Model):
             if configs.get('frp_http_port', '80') != '80':
                 access += ':' + configs.get('frp_http_port')
         elif self.challenge.redirect_type == 'direct':
-            f'nc {configs.get("frp_direct_ip_address", "")} {self.port}'
+            access = f'nc {configs.get("frp_direct_ip_address", "")} {self.port}'
         return access
 
     @property

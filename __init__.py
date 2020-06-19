@@ -24,12 +24,13 @@ from .utils.setup import setup_default_configs
 
 def load(app):
     # upgrade()
+    plugin_name = __name__.split('.')[-1]
     app.db.create_all()
     if not DBConfig.get_config("setup"):
         setup_default_configs()
     CHALLENGE_CLASSES["dynamic_docker"] = DynamicValueDockerChallenge
     register_plugin_assets_directory(
-        app, base_path="/plugins/" + __name__ + "/assets/"
+        app, base_path="/plugins/" + plugin_name + "/assets/"
     )
 
     page_blueprint = Blueprint(
@@ -62,6 +63,7 @@ def load(app):
     def admin_list_containers():
         result = AdminContainers.get()
         return render_template("containers.html",
+                               plugin_name=plugin_name,
                                containers=result['data']['containers'],
                                pages=result['data']['pages'],
                                curr_page=abs(request.args.get("page", 1, type=int)),
