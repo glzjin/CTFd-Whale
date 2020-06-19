@@ -1,112 +1,55 @@
-{% extends "admin/base.html" %}
+{% extends "whale_base.html" %}
 
-{% block stylesheets %}
+{% block menu %}
+    <li class="nav-item">
+        <a class="nav-link" href="/plugins/ctfd-whale/admin/settings">🔗 Settings</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" href="#">Instances</a>
+    </li>
+    <li class="nav-item nav-link">
+        <ul class="pagination">
+            <li class="page-item{{ ' disabled' if curr_page <= 1 else '' }}">
+                <a class="page-link" aria-label="Previous"
+                   href="/plugins/ctfd-whale/admin/containers?page={{ curr_page - 1 }}"
+                >
+                    <span aria-hidden="true">&laquo;</span>
+                    <span class="sr-only">Previous</span>
+                </a>
+            </li>
+            {% set range_l = [[curr_page - 1, 1]|max, [pages - 4, 1]|max]|min %}
+            {% set range_r = [[curr_page + 3, pages]|min, [5, pages + 1]|min]|max %}
+            {% for page in range(range_l, range_r) %}
+                <li class="page-item{{ ' active' if curr_page == page }}">
+                    <a class="page-link"
+                       href="/plugins/ctfd-whale/admin/containers?page={{ page }}"
+                    >{{ page }}</a>
+                </li>
+            {% endfor %}
+            <li class="page-item{{ ' disabled' if curr_page >= pages else '' }}">
+                <a class="page-link" aria-label="Next"
+                   href="/plugins/ctfd-whale/admin/containers?page={{ curr_page + 1 }}"
+                >
+                    <span aria-hidden="true">&raquo;</span>
+                    <span class="sr-only">Next</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+
+    <li class="nav-item nav-link">
+        {% if session['view_mode'] == 'card' %}
+            <a href="?mode=list">Switch to list mode</a>
+        {% else %}
+            <a href="?mode=card">Switch to card mode</a>
+        {% endif %}
+    </li>
 {% endblock %}
 
-{% block content %}
-	<div class="jumbotron">
-		<div class="container">
-			<h1>CTFd Whale Instances</h1>
-		</div>
-	</div>
-	<div class="container">
-		<div class="row">
-			<div class="col-md-12">
-				<table class="table table-striped">
-					<thead>
-					<tr>
-						<td class="text-center"><b>No</b></td>
-						<td class="text-center"><b>ID</b></td>
-						<td class="text-center"><b>User</b></td>
-						<td class="text-center"><b>Challenge</b></td>
-						<td class="text-center"><b>Access Method</b></td>
-						<td class="text-center"><b>Flag</b></td>
-						<td class="text-center"><b>Startup Time</b></td>
-						<td class="text-center"><b>Renewal Times</b></td>
-						<td class="text-center"><b>Delete</b></td>
-						<td class="text-center"><b>Renew</b></td>
-					</tr>
-					</thead>
-					<tbody>
-					{% for container in containers %}
-						<tr>
-                            <th scope="row" class="text-center">{{ curr_page_start + loop.index }}</th>
-							<td class="text-center">
-								{{ container.id }}
-							</td>
-							<td class="text-center">
-								<a href="{{ url_for('admin.users_detail', user_id=container.user.id) }}">
-                                    {{ container.user.name | truncate(32) }}
-                                </a>
-							</td>
-							<td class="text-center">
-								<a href="{{ url_for('admin.challenges_detail', challenge_id=container.challenge.id) }}">
-                                    {{ container.challenge.name }}
-                                </a>
-							</td>
-							<td class="text-center">
-								<span>
-                                    {{ container.user_access }}
-                                </span>
-							</td>
-                            <td class="text-center">
-                                {{ container.flag }}
-                            </td>
-                            <td class="text-center">
-                                {{ container.start_time }}
-                            </td>
-                            <td class="text-center">
-                                {{ container.renew_count }}
-                            </td>
-                            <td class="text-center">
-                                <a class="delete-container" container-id="{{ container.id }}" data-toggle="tooltip"
-                                     user-id="{{ container.user.id }}" data-placement="top" title="Destroy Container #{{ container.id }}">
-                                    <i class="fas fa-times"></i>
-                                </a>
-                            </td>
-                            <td class="text-center">
-                                <a class="renew-container" container-id="{{ container.id }}" data-toggle="tooltip"
-                                       user-id="{{ container.user.id }}" data-placement="top"
-                                       challenge-id="{{ container.challenge_id }}" title="Renew Container #{{ container.id }}">
-                                    <i class="fas fa-sync"></i>
-                                </a>
-                            </td>
-                        </tr>
-					{% endfor %}
-					</tbody>
-				</table>
-			</div>
-		</div>
-		{% if pages > 1 %}
-			<div class="row">
-				<div class="col-md-12">
-					<div class="text-center">Page
-						<br>
-						{% if curr_page != 1 %}
-							<a href="/plugins/ctfd-whale/admin/containers?page={{ curr_page - 1 }}">
-								&lt;&lt;&lt;
-							</a>
-						{% endif %}
-						{% for page in range(1, pages + 1) %}
-							{% if curr_page != page %}
-								<a href="/plugins/ctfd-whale/admin/containers?page={{ page }}">{{ page }}</a>
-							{% else %}
-								<b>{{ page }}</b>
-							{% endif %}
-						{% endfor %}
-						{% if curr_page != pages %}
-							<a href="/plugins/ctfd-whale/admin/containers?page={{ curr_page + 1 }}">
-								&gt;&gt;&gt;
-							</a>
-						{% endif %}
-					</div>
-				</div>
-			</div>
-		{% endif %}
-	</div>
+{% block panel %}
+    {% include "containers/" + session["view_mode"] + ".containers.html" %}
 {% endblock %}
 
 {% block scripts %}
-  <script defer src="{{ url_for('plugins.ctfd-whale.assets', path='containers.js') }}"></script>
+    <script defer src="{{ url_for('plugins.'+ plugin_name +'.assets', path='containers.js') }}"></script>
 {% endblock %}
-

@@ -1,0 +1,67 @@
+<div class="row">
+    <div class="col-md-12">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <td class="text-center"><b>No</b></td>
+                <td class="text-center"><b>ID</b></td>
+                <td class="text-center"><b>User</b></td>
+                <td class="text-center"><b>Challenge</b></td>
+                <td class="text-center"><b>Access Method</b></td>
+                <td class="text-center"><b>Flag</b></td>
+                <td class="text-center"><b>Startup Time</b></td>
+                <td class="text-center"><b>Renewal Times</b></td>
+                <td class="text-center"><b>Delete</b></td>
+                <td class="text-center"><b>Renew</b></td>
+            </tr>
+            </thead>
+            <tbody>
+            {% for container in containers %}
+                <tr>
+                    <th scope="row" class="text-center">{{ curr_page_start + loop.index }}</th>
+                    <td class="text-center">
+                        {{ container.id }}
+                    </td>
+                    <td class="text-center">
+                        <a href="{{ url_for('admin.users_detail', user_id=container.user.id) }}">
+                            {{ container.user.name | truncate(12) }}
+                        </a>
+                    </td>
+                    <td class="text-center">
+                        <a href="{{ url_for('admin.challenges_detail', challenge_id=container.challenge.id) }}">
+                            {{ container.challenge.name }}
+                        </a>
+                    </td>
+                    <td class="text-center">
+                        {{ container.user_access }}
+                    </td>
+                    <td class="text-center">
+                        {{ container.flag }}
+                    </td>
+                    <td class="text-center">
+                        {{ container.start_time }}
+                    </td>
+                    <td class="text-center">
+                        {{ container.renew_count }}
+                    </td>
+                    <td class="text-center">
+                        <a class="delete-container" container-id="{{ container.id }}" data-toggle="tooltip"
+                           user-id="{{ container.user.id }}" data-placement="top"
+                           title="Destroy Container #{{ container.id }}">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </td>
+                    <td class="text-center">
+                        <a class="renew-container" container-id="{{ container.id }}" data-toggle="tooltip"
+                           user-id="{{ container.user.id }}" data-placement="top"
+                           challenge-id="{{ container.challenge_id }}"
+                           title="Renew Container #{{ container.id }}">
+                            <i class="fas fa-sync"></i>
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

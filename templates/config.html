@@ -1,0 +1,34 @@
+{% extends "whale_base.html" %}
+
+{% block menu %}
+    <li class="nav-item">
+        <a class="nav-link active" data-toggle="pill" href="#docker">Docker</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="pill" href="#frp">Frp</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="pill" href="#limits">Limits</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="pill" href="#challenges">Challenges</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/plugins/ctfd-whale/admin/containers">🔗 Instances</a>
+    </li>
+{% endblock %}
+
+{% block panel %}
+    <div role="tabpanel" class="tab-pane config-section active" id="settings">
+        <form method="POST" accept-charset="utf-8"
+              class="form-horizontal">
+            <div class="tab-content">
+                {% include "config/docker.config.html" %}
+                {% include "config/frp.config.html" %}
+                {% include "config/limits.config.html" %}
+                {% include "config/challenges.config.html" %}
+            </div>
+            <input hidden name="nonce" value="{{ nonce }}"/>
+        </form>
+    </div>
+{% endblock %}

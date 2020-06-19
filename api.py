@@ -54,7 +54,7 @@ class AdminContainers(Resource):
     @admins_only
     def get():
         page = abs(request.args.get("page", 1, type=int))
-        results_per_page = abs(request.args.get("per_page", 50, type=int))
+        results_per_page = abs(request.args.get("per_page", 20, type=int))
         page_start = results_per_page * (page - 1)
         page_end = results_per_page * (page - 1) + results_per_page
 
