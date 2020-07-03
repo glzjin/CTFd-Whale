@@ -1,29 +1,33 @@
 import ipaddress
+
+import docker
 from flask_redis import FlaskRedis
 from redis.exceptions import LockError
-from .db_utils import DBUtils
-import docker
 
-class RedisUtils:
-    def __init__(self, app, user_id=0):
-        self.redis_client = FlaskRedis(app)
+from .db import DBContainer, DBConfig
+
+
+class RedisUtils(FlaskRedis):
+    def __init__(self, user_id=0, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.key = 'ctfd_whale_lock-' + str(user_id)
-        self.lock = None
+        self.current_lock = None
         self.global_port_key = "ctfd_whale-port-set"
         self.global_network_key = "ctfd_whale-network-set"
 
     def init_redis_port_sets(self):
-        configs = DBUtils.get_all_configs()
+        configs = DBConfig.get_all_configs()
 
-        self.redis_client.delete(self.global_port_key)
-        self.redis_client.delete(self.global_network_key)
+        self.delete(self.global_port_key)
+        self.delete(self.global_network_key)
 
-        containers = DBUtils.get_all_container()
+        containers = DBContainer.get_all_container()
         used_port_list = []
         for container in containers:
             if container.port != 0:
                 used_port_list.append(container.port)
-        for port in range(int(configs.get("frp_direct_port_minimum", 29000)), int(configs.get("frp_direct_port_maximum", 28000)) + 1):
+        for port in range(int(configs.get("frp_direct_port_minimum", 29000)),
+                          int(configs.get("frp_direct_port_maximum", 28000)) + 1):
             if port not in used_port_list:
                 self.add_available_port(port)
 
@@ -45,35 +49,35 @@ class RedisUtils:
             if str(network) not in exist_networks:
                 available_networks.append(str(network))
 
-        self.redis_client.sadd(self.global_network_key, *set(available_networks))
+        self.sadd(self.global_network_key, *set(available_networks))
 
     def add_available_network_range(self, network_range):
-        self.redis_client.sadd(self.global_network_key, network_range.encode())
+        self.sadd(self.global_network_key, network_range.encode())
 
     def get_available_network_range(self):
-        return self.redis_client.spop(self.global_network_key).decode()
+        return self.spop(self.global_network_key).decode()
 
     def add_available_port(self, port):
-        self.redis_client.sadd(self.global_port_key, str(port))
+        self.sadd(self.global_port_key, str(port))
 
     def get_available_port(self):
-        return int(self.redis_client.spop(self.global_port_key))
+        return int(self.spop(self.global_port_key))
 
     def acquire_lock(self):
-        lock = self.redis_client.lock(name=self.key, timeout=10)
+        lock = self.lock(name=self.key, timeout=10)
 
         if not lock.acquire(blocking=True, blocking_timeout=2.0):
             return False
 
-        self.lock = lock
+        self.current_lock = lock
         return True
 
     def release_lock(self):
-        if self.lock is None:
+        if self.current_lock is None:
             return False
 
         try:
-            self.lock.release()
+            self.current_lock.release()
 
             return True
         except LockError:

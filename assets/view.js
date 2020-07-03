@@ -13,8 +13,8 @@ CTFd._internal.challenge.postRender = function() { loadInfo(); }
 if ($ === undefined) $ = CTFd.lib.$;
 
 function loadInfo() {
-    var challenge_id = parseInt($('#challenge-id').val());
-    var url = "/plugins/ctfd-whale/container?challenge_id=" + challenge_id;
+    var challenge_id = $('#challenge-id').val();
+    var url = "/api/v1/plugins/ctfd-whale/container?challenge_id=" + challenge_id;
 
     var params = {};
 
@@ -40,7 +40,12 @@ function loadInfo() {
             clearInterval(window.t);
             window.t = undefined;
         }
-        
+        if (response.success) response = response.data;
+        else CTFd.ui.ezq.ezAlert({
+            title: "Fail",
+            body: response.message,
+            button: "OK"
+        });
         if (response.remaining_time === undefined) {
             $('#whale-panel').html('<div class="card" style="width: 100%;">' +
                 '<div class="card-body">' +
@@ -49,29 +54,18 @@ function loadInfo() {
                 '</div>' +
                 '</div>');
         } else {
-            if (response.type === 'http') {
-                $('#whale-panel').html('<div class="card" style="width: 100%;">' +
-                    '<div class="card-body">' +
-                    '<h5 class="card-title">Instance Info</h5>' +
-                    '<h6 class="card-subtitle mb-2 text-muted" id="whale-challenge-count-down">Remaining Time: ' + response.remaining_time + 's</h6>' +
-                    '<h6 class="card-subtitle mb-2 text-muted">Lan Domain: ' + response.lan_domain + '</h6>' +
-                    '<p class="card-text">http://' + response.domain + '</p>' +
-                    '<button type="button" class="btn btn-danger card-link" id="whale-button-destroy" onclick="CTFd._internal.challenge.destroy()">Destroy this instance</button>' +
-                    '<button type="button" class="btn btn-success card-link" id="whale-button-renew" onclick="CTFd._internal.challenge.renew()">Renew this instance</button>' +
-                    '</div>' +
-                    '</div>');
-            } else {
-                $('#whale-panel').html('<div class="card" style="width: 100%;">' +
-                    '<div class="card-body">' +
-                    '<h5 class="card-title">Instance Info</h5>' +
-                    '<h6 class="card-subtitle mb-2 text-muted" id="whale-challenge-count-down">Remaining Time: ' + response.remaining_time + 's</h6>' +
-                    '<h6 class="card-subtitle mb-2 text-muted">Lan Domain: ' + response.lan_domain + '</h6>' +
-                    '<p class="card-text">' + response.ip + ':' + response.port + '</p>' +
-                    '<button type="button" class="btn btn-danger card-link" id="whale-button-destroy" onclick="CTFd._internal.challenge.destroy()">Destroy this instance</button>' +
-                    '<button type="button" class="btn btn-success card-link" id="whale-button-renew" onclick="CTFd._internal.challenge.renew()">Renew this instance</button>' +
-                    '</div>' +
-                    '</div>');
-            }
+            $('#whale-panel').html(
+                '<div class="card" style="width: 100%;">' +
+                '<div class="card-body">' +
+                '<h5 class="card-title">Instance Info</h5>' +
+                '<h6 class="card-subtitle mb-2 text-muted" id="whale-challenge-count-down">Remaining Time: ' + response.remaining_time + 's</h6>' +
+                '<h6 class="card-subtitle mb-2 text-muted">Lan Domain: ' + response.lan_domain + '</h6>' +
+                '<p class="card-text">' + response.user_access + '</p>' +
+                '<button type="button" class="btn btn-danger card-link" id="whale-button-destroy" onclick="CTFd._internal.challenge.destroy()">Destroy this instance</button>' +
+                '<button type="button" class="btn btn-success card-link" id="whale-button-renew" onclick="CTFd._internal.challenge.renew()">Renew this instance</button>' +
+                '</div>' +
+                '</div>'
+            );
 
             function showAuto() {
                 const c = $('#whale-challenge-count-down')[0];
@@ -90,8 +84,8 @@ function loadInfo() {
 };
 
 CTFd._internal.challenge.destroy = function() {
-    var challenge_id = parseInt($('#challenge-id').val());
-    var url = "/plugins/ctfd-whale/container?challenge_id=" + challenge_id;
+    var challenge_id = $('#challenge-id').val();
+    var url = "/api/v1/plugins/ctfd-whale/container?challenge_id=" + challenge_id;
 
     $('#whale-button-destroy')[0].innerHTML = "Waiting...";
     $('#whale-button-destroy')[0].disabled = true;
@@ -129,7 +123,7 @@ CTFd._internal.challenge.destroy = function() {
             $('#whale-button-destroy')[0].disabled = false;
             CTFd.ui.ezq.ezAlert({
                 title: "Fail",
-                body: response.msg,
+                body: response.message,
                 button: "OK"
             });
         }
@@ -137,8 +131,8 @@ CTFd._internal.challenge.destroy = function() {
 };
 
 CTFd._internal.challenge.renew = function() {
-    var challenge_id = parseInt($('#challenge-id').val());
-    var url = "/plugins/ctfd-whale/container?challenge_id=" + challenge_id;
+    var challenge_id = $('#challenge-id').val();
+    var url = "/api/v1/plugins/ctfd-whale/container?challenge_id=" + challenge_id;
 
     $('#whale-button-renew')[0].innerHTML = "Waiting...";
     $('#whale-button-renew')[0].disabled = true;
@@ -176,7 +170,7 @@ CTFd._internal.challenge.renew = function() {
             $('#whale-button-renew')[0].disabled = false;
             CTFd.ui.ezq.ezAlert({
                 title: "Fail",
-                body: response.msg,
+                body: response.message,
                 button: "OK"
             });
         }
@@ -184,8 +178,8 @@ CTFd._internal.challenge.renew = function() {
 };
 
 CTFd._internal.challenge.boot = function() {
-    var challenge_id = parseInt($('#challenge-id').val());
-    var url = "/plugins/ctfd-whale/container?challenge_id=" + challenge_id;
+    var challenge_id = $('#challenge-id').val();
+    var url = "/api/v1/plugins/ctfd-whale/container?challenge_id=" + challenge_id;
 
     $('#whale-button-boot')[0].innerHTML = "Waiting...";
     $('#whale-button-boot')[0].disabled = true;
@@ -223,7 +217,7 @@ CTFd._internal.challenge.boot = function() {
             $('#whale-button-boot')[0].disabled = false;
             CTFd.ui.ezq.ezAlert({
                 title: "Fail",
-                body: response.msg,
+                body: response.message,
                 button: "OK"
             });
         }
@@ -232,7 +226,7 @@ CTFd._internal.challenge.boot = function() {
 
 
 CTFd._internal.challenge.submit = function(preview) {
-    var challenge_id = parseInt($('#challenge-id').val())
+    var challenge_id = $('#challenge-id').val();
     var submission = $('#submission-input').val()
 
     var body = {
