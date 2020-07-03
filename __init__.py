@@ -1,11 +1,8 @@
-from __future__ import division  # Use floating point for math calculations
-
 import fcntl
 
 import requests
 from flask import Blueprint, render_template, session, current_app
 from flask_apscheduler import APScheduler
-from flask_migrate import upgrade
 
 from CTFd.api import CTFd_API_v1
 from CTFd.plugins import (
