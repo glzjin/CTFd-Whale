@@ -7,6 +7,7 @@ from flask_apscheduler import APScheduler
 from CTFd.api import CTFd_API_v1
 from CTFd.plugins import (
     register_plugin_assets_directory,
+    register_admin_plugin_menu_bar,
 )
 from CTFd.plugins.challenges import CHALLENGE_CLASSES
 from CTFd.utils.security.csrf import generate_nonce
@@ -20,8 +21,8 @@ from .utils.setup import setup_default_configs
 
 
 def load(app):
-    plugin_name = __name__.split('.')[-1]
     # upgrade()
+    plugin_name = __name__.split('.')[-1]
     app.db.create_all()
     if not DBConfig.get_config("setup"):
         setup_default_configs()
@@ -37,19 +38,20 @@ def load(app):
         static_folder="assets",
         url_prefix="/plugins/ctfd-whale"
     )
-
-    CTFd_API_v1.add_namespace(
-        admin_namespace, path="/plugins/ctfd-whale/admin")
+    register_admin_plugin_menu_bar(
+        'Whale', '/plugins/ctfd-whale/admin/settings'
+    )
+    CTFd_API_v1.add_namespace(admin_namespace, path="/plugins/ctfd-whale/admin")
     CTFd_API_v1.add_namespace(user_namespace, path="/plugins/ctfd-whale")
 
-    @page_blueprint.route('/admin/settings', methods=['GET', 'PATCH'])
+    @page_blueprint.route('/admin/settings', methods=['GET', 'POST'])
     @admins_only
     def admin_list_configs():
-        if request.method == 'PATCH':
-            data = request.json
+        if request.method == 'POST':
+            data = request.form.to_dict()
+            data.pop('nonce')
             DBConfig.set_all_configs(data)
             RedisUtils(app=current_app).init_redis_port_sets()
-            return '{}'
         session["nonce"] = generate_nonce()
         configs = DBConfig.get_all_configs()
         return render_template('whale_config.html', configs=configs)
@@ -64,8 +66,7 @@ def load(app):
                                plugin_name=plugin_name,
                                containers=result['data']['containers'],
                                pages=result['data']['pages'],
-                               curr_page=abs(request.args.get(
-                                   "page", 1, type=int)),
+                               curr_page=abs(request.args.get("page", 1, type=int)),
                                curr_page_start=result['data']['page_start'])
 
     def auto_clean_container():
@@ -102,8 +103,8 @@ def load(app):
                 ).status_code == 200
             except (requests.RequestException, AssertionError):
                 raise WhaleError(
-                    'frpc request failed\n'
-                    + 'please check the frp related configs'
+                    'frpc request failed\n' +
+                    'please check the frp related configs'
                 )
 
     app.register_blueprint(page_blueprint)
