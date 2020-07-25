@@ -1,4 +1,5 @@
 from .db import DBConfig
+from ..models import WhaleRedirectTemplate, db
 
 
 def setup_default_configs():
@@ -18,3 +19,34 @@ def setup_default_configs():
         'template_http_subdomain': '{{ container.uuid }}',
         'template_chall_flag': '{{ "flag{"+uuid.uuid4()|string+"}" }}',
     })
+    db.session.add(WhaleRedirectTemplate(
+        'http',
+        'http://{{ container.http_subdomain }}.{{ configs.get("frp_http_domain_suffix", "") }}{% if configs.get("frp_http_port", "80") != 80 %}:{{ configs.get("frp_http_port") }}{% endif %}/',
+        '''
+[http_{{ container.user_id|string }}-{{ container.uuid }}]
+type = http
+local_ip = {{ container.user_id|string }}-{{ container.uuid }}
+local_port = {{ container.challenge.redirect_port }}
+subdomain = {{ container.http_subdomain }}
+use_compression = true
+'''
+    ))
+    db.session.add(WhaleRedirectTemplate(
+        'direct',
+        'nc {{ configs.get("frp_direct_ip_address", "127.0.0.1") }} {{ container.port }}',
+        '''
+[direct_{{ container.user_id|string }}-{{ container.uuid }}]
+type = tcp
+local_ip = {{ container.user_id|string }}-{{ container.uuid }}
+local_port = {{ container.challenge.redirect_port }}
+remote_port = {{ container.port }}
+use_compression = true
+
+[direct_{{ container.user_id|string }}-{{ container.uuid }}_udp]
+type = udp
+local_ip = {{ container.user_id|string }}-{{ container.uuid }}
+local_port = {{ container.challenge.redirect_port }}
+remote_port = {{ container.port }}
+use_compression = true
+'''
+    ))

@@ -1,5 +1,3 @@
-from __future__ import division  # Use floating point for math calculations
-
 import random
 import uuid
 from datetime import datetime
@@ -19,6 +17,20 @@ class WhaleConfig(db.Model):
 
     def __repr__(self):
         return "<WhaleConfig (0) {1}>".format(self.key, self.value)
+
+
+class WhaleRedirectTemplate(db.Model):
+    key = db.Column(db.String(20), primary_key=True)
+    frp_template = db.Column(db.Text)
+    access_template = db.Column(db.Text)
+
+    def __init__(self, key, access_template, frp_template):
+        self.key = key
+        self.access_template = access_template
+        self.frp_template = frp_template
+
+    def __repr__(self):
+        return "<WhaleRedirectTemplate (0) {1}>".format(self.key)
 
 
 class DynamicDockerChallenge(Challenges):
@@ -45,7 +57,8 @@ class WhaleContainer(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(None, db.ForeignKey("users.id"))
     challenge_id = db.Column(None, db.ForeignKey("challenges.id"))
-    start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    start_time = db.Column(db.DateTime, nullable=False,
+                           default=datetime.utcnow)
     renew_count = db.Column(db.Integer, nullable=False, default=0)
     status = db.Column(db.Integer, default=1)
     uuid = db.Column(db.String(256))
@@ -53,7 +66,8 @@ class WhaleContainer(db.Model):
     flag = db.Column(db.String(128), nullable=False)
 
     # Relationships
-    user = db.relationship("Users", foreign_keys="WhaleContainer.user_id", lazy="select")
+    user = db.relationship(
+        "Users", foreign_keys="WhaleContainer.user_id", lazy="select")
     challenge = db.relationship(
         "DynamicDockerChallenge", foreign_keys="WhaleContainer.challenge_id", lazy="select"
     )
@@ -82,46 +96,18 @@ class WhaleContainer(db.Model):
         configs = {}
         for c in WhaleConfig.query.all():
             configs[str(c.key)] = str(c.value)
-        access = ''
-        if self.challenge.redirect_type == 'http':
-            subdomain_host = configs.get("frp_http_domain_suffix", "").lstrip(".")
-            access = f'http://{self.http_subdomain}.{subdomain_host}'
-            if configs.get('frp_http_port', '80') != '80':
-                access += ':' + configs.get('frp_http_port')
-        elif self.challenge.redirect_type == 'direct':
-            access = f'nc {configs.get("frp_direct_ip_address", "")} {self.port}'
-        return access
+        return Template(WhaleRedirectTemplate.query.filter_by(
+            key=self.challenge.redirect_type
+        ).first().access_template).render(container=self, configs=configs)
 
     @property
     def frp_config(self):
         configs = {}
         for c in WhaleConfig.query.all():
             configs[str(c.key)] = str(c.value)
-        if self.challenge.redirect_type == 'http':
-            return f"""
-[http_{str(self.user_id)}-{self.uuid}]
-type = http
-local_ip = {str(self.user_id)}-{self.uuid}
-local_port = {self.challenge.redirect_port}
-subdomain = {self.http_subdomain}
-use_compression = true
-"""
-        elif self.challenge.redirect_type == 'direct':
-            return f"""
-[direct_{str(self.user_id)}-{self.uuid}]
-type = tcp
-local_ip = {str(self.user_id)}-{self.uuid}
-local_port = {self.challenge.redirect_port}
-remote_port = {self.port}
-use_compression = true
-
-[direct_{str(self.user_id)}-{self.uuid}_udp]
-type = udp
-local_ip = {str(self.user_id)}-{self.uuid}
-local_port = {self.challenge.redirect_port}
-remote_port = {self.port}
-use_compression = true
-"""
+        return Template(WhaleRedirectTemplate.query.filter_by(
+            key=self.challenge.redirect_type
+        ).first().frp_template).render(container=self, configs=configs)
 
     def __repr__(self):
         return "<WhaleContainer ID:(0) {1} {2} {3} {4}>".format(self.id, self.user_id, self.challenge_id,
