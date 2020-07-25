@@ -50,3 +50,4 @@ remote_port = {{ container.port }}
 use_compression = true
 '''
     ))
+    db.session.commit()

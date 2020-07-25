@@ -19,7 +19,7 @@ user_namespace = Namespace("ctfd-whale-user")
 def handle_notfound(err):
     data = {
         'success': False,
-        'message': err.message
+        'message': err.description
     }
     return data, 404
 
@@ -110,7 +110,6 @@ class UserContainers(Resource):
             'success': True,
             'data': {
                 'lan_domain': str(user_id) + "-" + container.uuid,
-                'type': 'http',
                 'user_access': container.user_access,
                 'remaining_time': timeout - (datetime.now() - container.start_time).seconds,
             }
