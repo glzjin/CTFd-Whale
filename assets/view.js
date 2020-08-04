@@ -230,7 +230,7 @@ CTFd._internal.challenge.boot = function () {
 
 CTFd._internal.challenge.submit = function (preview) {
     var challenge_id = $('#challenge-id').val();
-    var submission = $('#submission-input').val()
+    var submission = $('#challenge-input').val()
 
     var body = {
         'challenge_id': challenge_id,
