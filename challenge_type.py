@@ -1,25 +1,13 @@
-from __future__ import division  # Use floating point for math calculations
-
-import math
-
 from flask import Blueprint
 
 from CTFd.models import (
     db,
-    Solves,
-    Fails,
     Flags,
-    Challenges,
-    ChallengeFiles,
-    Tags,
-    Hints,
 )
 from CTFd.plugins.challenges import BaseChallenge
+from CTFd.plugins.dynamic_challenges import DynamicValueChallenge
 from CTFd.plugins.flags import get_flag_class
 from CTFd.utils import user as current_user
-from CTFd.utils.modes import get_model
-from CTFd.utils.uploads import delete_file
-from CTFd.utils.user import get_ip
 from .models import WhaleContainer, DynamicDockerChallenge
 
 
@@ -46,8 +34,8 @@ class DynamicValueDockerChallenge(BaseChallenge):
         static_folder="assets",
     )
 
-    @staticmethod
-    def create(request):
+    @classmethod
+    def create(cls, request):
         """
         This method is used to process the challenge creation request.
 
@@ -62,8 +50,8 @@ class DynamicValueDockerChallenge(BaseChallenge):
 
         return challenge
 
-    @staticmethod
-    def read(challenge):
+    @classmethod
+    def read(cls, challenge):
         """
         This method is in used to access the data of a challenge in a format processable by the front end.
 
@@ -84,16 +72,16 @@ class DynamicValueDockerChallenge(BaseChallenge):
             "max_attempts": challenge.max_attempts,
             "type": challenge.type,
             "type_data": {
-                "id": DynamicValueDockerChallenge.id,
-                "name": DynamicValueDockerChallenge.name,
-                "templates": DynamicValueDockerChallenge.templates,
-                "scripts": DynamicValueDockerChallenge.scripts,
+                "id": cls.id,
+                "name": cls.name,
+                "templates": cls.templates,
+                "scripts": cls.scripts,
             },
         }
         return data
 
-    @staticmethod
-    def update(challenge, request):
+    @classmethod
+    def update(cls, challenge, request):
         """
         This method is used to update the information associated with a challenge. This should be kept strictly to the
         Challenges table and any child tables.
@@ -110,58 +98,14 @@ class DynamicValueDockerChallenge(BaseChallenge):
                 value = float(value)
             setattr(challenge, attr, value)
 
-        Model = get_model()
-
-        solve_count = (
-            Solves.query.join(Model, Solves.account_id == Model.id)
-                .filter(
-                Solves.challenge_id == challenge.id,
-                Model.hidden == False,
-                Model.banned == False,
-            )
-                .count()
-        )
-
-        # It is important that this calculation takes into account floats.
-        # Hence this file uses from __future__ import division
-        value = (
-                        ((challenge.minimum - challenge.initial) / (challenge.decay ** 2))
-                        * (solve_count ** 2)
-                ) + challenge.initial
-
-        value = math.ceil(value)
-
-        if value < challenge.minimum:
-            value = challenge.minimum
-
-        challenge.value = value
+        if challenge.dynamic_score == 1:
+            return DynamicValueChallenge.calculate_value(challenge)
 
         db.session.commit()
         return challenge
 
-    @staticmethod
-    def delete(challenge):
-        """
-        This method is used to delete the resources used by a challenge.
-
-        :param challenge:
-        :return:
-        """
-        Fails.query.filter_by(challenge_id=challenge.id).delete()
-        Solves.query.filter_by(challenge_id=challenge.id).delete()
-        Flags.query.filter_by(challenge_id=challenge.id).delete()
-        files = ChallengeFiles.query.filter_by(challenge_id=challenge.id).all()
-        for f in files:
-            delete_file(f.id)
-        ChallengeFiles.query.filter_by(challenge_id=challenge.id).delete()
-        Tags.query.filter_by(challenge_id=challenge.id).delete()
-        Hints.query.filter_by(challenge_id=challenge.id).delete()
-        DynamicDockerChallenge.query.filter_by(id=challenge.id).delete()
-        Challenges.query.filter_by(id=challenge.id).delete()
-        db.session.commit()
-
-    @staticmethod
-    def attempt(challenge, request):
+    @classmethod
+    def attempt(cls, challenge, request):
         """
         This method is used to check whether a given input is right or wrong. It does not make any changes and should
         return a boolean for correctness and a string to be shown to the user. It is also in charge of parsing the
@@ -195,8 +139,8 @@ class DynamicValueDockerChallenge(BaseChallenge):
                 return True, "Correct"
             return False, "Incorrect"
 
-    @staticmethod
-    def solve(user, team, challenge, request):
+    @classmethod
+    def solve(cls, user, team, challenge, request):
         """
         This method is used to insert Solves into the database in order to mark a challenge as solved.
 
@@ -205,69 +149,10 @@ class DynamicValueDockerChallenge(BaseChallenge):
         :param request: The request the user submitted
         :return:
         """
-        chal = DynamicDockerChallenge.query.filter_by(id=challenge.id).first()
-        data = request.form or request.get_json()
-        submission = data["submission"].strip()
+        super().solve(user, team, challenge, request)
 
-        Model = get_model()
+        if challenge.dynamic_score == 1:
+            DynamicValueChallenge.calculate_value(challenge)
 
-        solve = Solves(
-            user_id=user.id,
-            team_id=team.id if team else None,
-            challenge_id=challenge.id,
-            ip=get_ip(req=request),
-            provided=submission,
-        )
-        db.session.add(solve)
-
-        if chal.dynamic_score == 1:
-
-            solve_count = (
-                Solves.query.join(Model, Solves.account_id == Model.id).filter(
-                    Solves.challenge_id == challenge.id,
-                    Model.hidden == False,
-                    Model.banned == False,
-                ).count()
-            )
-
-            # We subtract -1 to allow the first solver to get max point value
-            solve_count -= 1
-
-            # It is important that this calculation takes into account floats.
-            # Hence this file uses from __future__ import division
-            value = chal.initial + \
-                    ((solve_count / chal.decay) ** 2) * \
-                    (chal.minimum - chal.initial)
-
-            value = math.ceil(value)
-
-            if value < chal.minimum:
-                value = chal.minimum
-
-            chal.value = value
-
-        db.session.commit()
-        db.session.close()
-
-    @staticmethod
-    def fail(user, team, challenge, request):
-        """
-        This method is used to insert Fails into the database in order to mark an answer incorrect.
-
-        :param team: The Team object from the database
-        :param challenge: The Challenge object from the database
-        :param request: The request the user submitted
-        :return:
-        """
-        data = request.form or request.get_json()
-        submission = data["submission"].strip()
-        wrong = Fails(
-            user_id=user.id,
-            team_id=team.id if team else None,
-            challenge_id=challenge.id,
-            ip=get_ip(request),
-            provided=submission,
-        )
-        db.session.add(wrong)
         db.session.commit()
         db.session.close()
