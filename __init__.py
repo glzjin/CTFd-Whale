@@ -56,7 +56,7 @@ def load(app):
             RedisUtils(app=current_app).init_redis_port_sets()
         session["nonce"] = generate_nonce()
         configs = DBConfig.get_all_configs()
-        return render_template('config.html', configs=configs)
+        return render_template('whale_config.html', configs=configs)
 
     @page_blueprint.route("/admin/containers")
     @admins_only
@@ -64,7 +64,7 @@ def load(app):
         result = AdminContainers.get()
         view_mode = request.args.get('mode', session.get('view_mode', 'card'))
         session['view_mode'] = view_mode
-        return render_template("containers.html",
+        return render_template("whale_containers.html",
                                plugin_name=plugin_name,
                                containers=result['data']['containers'],
                                pages=result['data']['pages'],
