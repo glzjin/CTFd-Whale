@@ -91,7 +91,7 @@ class DBContainer:
 
         q = db.session.query(WhaleContainer)
         q = q.filter(
-            WhaleContainer.start_time >=
+            WhaleContainer.start_time <
             datetime.datetime.now() - datetime.timedelta(seconds=timeout)
         )
         return q.all()

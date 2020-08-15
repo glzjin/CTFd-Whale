@@ -16,7 +16,7 @@ class WhaleConfig(db.Model):
         self.value = value
 
     def __repr__(self):
-        return "<WhaleConfig (0) {1}>".format(self.key, self.value)
+        return "<WhaleConfig {0} {1}>".format(self.key, self.value)
 
 
 class WhaleRedirectTemplate(db.Model):
@@ -30,7 +30,7 @@ class WhaleRedirectTemplate(db.Model):
         self.frp_template = frp_template
 
     def __repr__(self):
-        return "<WhaleRedirectTemplate (0) {1}>".format(self.key)
+        return "<WhaleRedirectTemplate {0}>".format(self.key)
 
 
 class DynamicDockerChallenge(Challenges):
@@ -110,5 +110,5 @@ class WhaleContainer(db.Model):
         ).first().frp_template).render(container=self, configs=configs)
 
     def __repr__(self):
-        return "<WhaleContainer ID:(0) {1} {2} {3} {4}>".format(self.id, self.user_id, self.challenge_id,
+        return "<WhaleContainer ID:{0} {1} {2} {3} {4}>".format(self.id, self.user_id, self.challenge_id,
                                                                 self.start_time, self.renew_count)
