@@ -28,7 +28,7 @@
                 {% include "config/limits.config.html" %}
                 {% include "config/challenges.config.html" %}
             </div>
-            <input hidden name="nonce" value="{{ nonce }}"/>
+            <input hidden name="nonce" value="{{ Session.nonce }}"/>
         </form>
     </div>
 {% endblock %}
