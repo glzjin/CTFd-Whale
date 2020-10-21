@@ -156,3 +156,14 @@ class DynamicValueDockerChallenge(BaseChallenge):
 
         db.session.commit()
         db.session.close()
+
+    @classmethod
+    def delete(cls, challenge):
+        DynamicDockerChallenge.query.filter_by(
+            id=challenge.id
+        ).delete()
+        for container in WhaleContainer.query.filter_by(
+            challenge_id=challenge.id
+        ).all():
+            ControlUtil.try_remove_container(container.user_id)
+        super().delete(challenge)
