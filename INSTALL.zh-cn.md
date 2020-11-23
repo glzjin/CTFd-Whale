@@ -4,20 +4,31 @@
 
 ### 从零开始
 
-首先需要初始化一个swarm集群并给节点标注名称<br>
-linux节点名称需要以`linux-`打头，windows节点则以`windows-`打头
+首先需要初始化一个swarm集群并给节点标注名称
+
+linux节点名称需要以 `linux-` 打头，windows节点则以 `windows-` 打头
 
 ```bash
 docker swarm init
 docker node update --label-add "name=linux-1" $(docker node ls -q)
 ```
 
-然后先确保CTFd可以正常运行。<br>
-注意，2.5.0+版本CTFd的`docker-compose.yml`中包含了一个`nginx`反代，占用了80端口
+然后先确保CTFd可以正常运行。
+
+注意，2.5.0+版本CTFd的 `docker-compose.yml` 中包含了一个 `nginx` 反代，占用了80端口
 
 ```bash
 git pull https://github.com/CTFd/CTFd
 cd CTFd  # 注：以下全部内容的cwd均为此目录
+```
+
+先将 `docker-compose.yml` 的第一行进行修改，以支持 `attachable` 参数
+
+`version '2'` -> `version '3'`
+
+接着
+
+```bash
 docker-compose up -d
 ```
 
@@ -25,7 +36,8 @@ docker-compose up -d
 
 ### 配置frps
 
-frps可以直接通过docker-compose与CTFd同步启动。<br>
+frps可以直接通过docker-compose与CTFd同步启动。
+
 首先在networks中添加一个网络，用于frpc与frps之间的通信，并添加frps service
 
 ```yml
@@ -57,7 +69,13 @@ networks:
                 - subnet: 172.1.0.0/16
 ```
 
-创建`./conf/frps.ini`文件，填写：
+先创建目录 `./conf/frp`
+
+```bash
+mkdir ./conf/frp
+```
+
+接着创建 `./conf/frp/frps.ini` 文件，填写：
 
 ```ini
 [common]
@@ -84,6 +102,8 @@ services:
           - /usr/local/bin/frpc
           - -c
           - /conf/frpc.ini
+        depends_on:
+          - frps #frps需要先成功运行
         networks:
             frp_containers:  # 供frpc访问题目容器
             frp_connect:  # 供frpc访问frps, CTFd访问frpc
@@ -100,7 +120,7 @@ networks:
                 - subnet: 172.2.0.0/16
 ```
 
-同样，我们需要创建一个`./conf/frpc.ini`
+同样，我们需要创建一个 `./conf/frp/frpc.ini`
 
 ```ini
 [common]
@@ -113,8 +133,9 @@ admin_port = 7400
 
 ### 检查frp配置是否正确
 
-此时可以执行`docker-compose up -d`更新compose配置<br>
-通过查看日志`docker-compose logs frpc`，应当能看到frpc产生了以下日志：
+此时可以执行 `docker-compose up -d` 更新compose配置
+
+通过查看日志 `docker-compose logs frpc` ，应当能看到frpc产生了以下日志：
 
 ```log
 [service.go:224] login to server success, get run id [******], server udp port [******]
@@ -137,7 +158,8 @@ CTFd/
 
 ### 配置CTFd
 
-前面的工作完成后，将本机docker的访问接口映射到CTFd所在容器内，<br>
+前面的工作完成后，将本机docker的访问接口映射到CTFd所在容器内
+
 并将CTFd添加到frpc所在network中（注意不是containers这个network）
 
 ```yml
@@ -146,6 +168,8 @@ services:
         ...
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
+        depends_on:
+            - frpc #frpc需要先运行
         networks:
             ...
             frp_connect:
@@ -154,13 +178,14 @@ services:
 将CTFd-Whale克隆至CTFd的插件目录
 
 ```bash
-git clone https://github.com/glzjin/CTFd-Whale CTFd/plugins/ctfd-whale
+git clone https://github.com/frankli0324/CTFd-Whale CTFd/plugins/ctfd-whale
 docker-compose up -d
 ```
 
-进入Whale的配置页面(`/plugins/ctfd-whale/admin/settings`)，首先配置docker配置项
+进入Whale的配置页面( `/plugins/ctfd-whale/admin/settings` )，首先配置docker配置项
 
-需要注意的是`Auto Connect Network`，如果按照上面的配置流程进行配置的话，应当是`ctfd_frp_containers`<br>
+需要注意的是 `Auto Connect Network` ，如果按照上面的配置流程进行配置的话，应当是 `ctfd_frp_containers`
+
 如果不确定的话，可以通过下面的命令列出CTFd目录compose生成的所有network
 
 ```bash
@@ -173,7 +198,7 @@ docker network ls -f "label=com.docker.compose.project=ctfd" --format "{{.Name}}
 - `HTTP Port` 与 frps 的 `vhost_http_port` 保持一致
 - `Direct IP Address` 为能访问到 frps 相应端口(例子中为10000-10100) 的IP
 - `Direct Minimum Port` 与 `Direct Maximum Port` 显然可得
-- 只要正确填写了`API URL`，Whale 会自动获取 frpc 的配置文件作为 `Frpc config template`
+- 只要正确填写了 `API URL` ，Whale 会自动获取 frpc 的配置文件作为 `Frpc config template`
 - 通过设置 `Frpc config template` 可以覆盖原有 `frpc.ini` 文件
 
 至此，CTFd-Whale 已经马马虎虎可以正常使用了。
@@ -182,13 +207,13 @@ docker network ls -f "label=com.docker.compose.project=ctfd" --format "{{.Name}}
 
 如果你在使用2.5.0+版本的CTFd，那么你可以直接利用自带的nginx进行http题目的反代
 
-首先去除docker-compose.yml中对frps http端口的映射(8001)<br>
+首先去除docker-compose.yml中对frps http端口的映射(8001)
 如果想贯彻到底的话，可以
 
 - 为nginx添加internal与default两个network
 - 去除CTFd的default network，并去除ports项
 
-在`./conf/nginx/nginx.conf`的http block中添加以下server block
+在 `./conf/nginx/nginx.conf` 的http block中添加以下server block
 
 ```conf
 server {
@@ -209,7 +234,8 @@ server {
 
 ### 单容器题目环境
 
-请参考<https://github.com/CTFTraining>中的镜像进行题目镜像制作（Dockerfile编写）。总体而言，题目在启动时会向**容器**内传入名为 `FLAG` 的环境变量，你需要编写一个启动脚本（一般为bash+sed组合拳）将flag写入自己的题目中，并删除这一环境变量。<br>
+请参考<https://github.com/CTFTraining>中的镜像进行题目镜像制作（Dockerfile编写）。总体而言，题目在启动时会向**容器**内传入名为 `FLAG` 的环境变量，你需要编写一个启动脚本（一般为bash+sed组合拳）将flag写入自己的题目中，并删除这一环境变量。
+
 请出题人制作镜像时请理清思路，不要搞混容器与镜像的概念。这样既方便自己，也方便部署人员。
 
 ### 多容器题目环境
@@ -222,7 +248,7 @@ server {
 }
 ```
 
-Whale会保留json的key顺序，并将第一个容器作为"主容器"映射到外网，映射方式与单容器相同<br>
+Whale会保留json的key顺序，并将第一个容器作为"主容器"映射到外网，映射方式与单容器相同
 以buuoj上的swpu2019 web2为例，可以配置如下：
 
 ```json

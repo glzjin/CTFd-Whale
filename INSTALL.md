@@ -4,7 +4,8 @@
 
 ### Start from scratch
 
-First of all, you should initialize a docker swarm and label the nodes<br>
+First of all, you should initialize a docker swarm and label the nodes
+
 names of nodes running linux/windows should begin with `linux/windows-*`
 
 ```bash
@@ -12,12 +13,20 @@ docker swarm init
 docker node update --label-add "name=linux-1" $(docker node ls -q)
 ```
 
-After initializing a swarm, make sure that CTFd runs as expected on your PC/server<br>
+After initializing a swarm, make sure that CTFd runs as expected on your PC/server
+
 Note that the included compose file in CTFd 2.5.0+ starts an nginx container by default, which takes the http/80 port. make sure there's no conflicts.
 
 ```bash
 git pull https://github.com/CTFd/CTFd
 cd CTFd  # the cwd will not change throughout this guide from this line on
+```
+
+Change the first line of `docker-compose.yml` to support `attachable` property
+
+`version '2'` -> `version '3'`
+
+```bash
 docker-compose up -d
 ```
 
@@ -25,7 +34,8 @@ take a look at <http://localhost>(or port 8000) and setup CTFd
 
 ### Configure frps
 
-frps could be started by docker-compose along with CTFd。<br>
+frps could be started by docker-compose along with CTFd。
+
 define a network for communication between frpc and frps, and create a frps service block
 
 ```yml
@@ -55,9 +65,14 @@ networks:
         ipam:
             config:
                 - subnet: 172.1.0.0/16
+
+Create a folder in `conf/` called `frp`
+
+```bash
+mkdir ./conf/frp
 ```
 
-create a configuration file for frps `./conf/frps.ini`, and fill it with:
+then create a configuration file for frps `./conf/frp/frps.ini`, and fill it with:
 
 ```ini
 [common]
@@ -71,7 +86,8 @@ subdomain_host = node3.buuoj.cn
 
 ### Configure frpc
 
-Likewise, create a network and a service for frpc<br>
+Likewise, create a network and a service for frpc
+
 the network allows challenges to be accessed by frpc
 
 ```yml
@@ -86,6 +102,8 @@ services:
           - /usr/local/bin/frpc
           - -c
           - /conf/frpc.ini
+        depends_on:
+          - frps #need frps to run first
         networks:
             frp_containers:
             frp_connect:
@@ -103,7 +121,7 @@ networks:
                 - subnet: 172.2.0.0/16
 ```
 
-Likewise, create an frpc config file `./conf/frpc.ini`
+Likewise, create an frpc config file `./conf/frp/frpc.ini`
 
 ```ini
 [common]
@@ -116,7 +134,8 @@ admin_port = 7400
 
 ### Verify frp configurations
 
-update compose stack with `docker-compose up -d`<br>
+update compose stack with `docker-compose up -d`
+
 by executing `docker-compose logs frpc`, you should see that frpc produced following logs:
 
 ```log
@@ -140,7 +159,8 @@ CTFd/
 
 ### Configure CTFd
 
-After finishing everything above:<br>
+After finishing everything above:
+
 
 - map docker socket into CTFd container
 - Attach CTFd container to frp_connect
@@ -151,6 +171,8 @@ services:
         ...
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
+        depends_on:
+            - frpc #need frpc to run ahead
         networks:
             ...
             frp_connect:
@@ -159,7 +181,7 @@ services:
 and then clone Whale into CTFd plugins directory (yes, finally)
 
 ```bash
-git clone https://github.com/glzjin/CTFd-Whale CTFd/plugins/ctfd-whale
+git clone https://github.com/frankli0324/CTFd-Whale CTFd/plugins/ctfd-whale
 docker-compose up -d
 ```
 
