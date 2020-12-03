@@ -18,7 +18,7 @@ docker node update --label-add "name=linux-1" $(docker node ls -q)
 注意，2.5.0+版本CTFd的 `docker-compose.yml` 中包含了一个 `nginx` 反代，占用了80端口
 
 ```bash
-git pull https://github.com/CTFd/CTFd
+git clone https://github.com/CTFd/CTFd --depth=1
 cd CTFd  # 注：以下全部内容的cwd均为此目录
 ```
 
@@ -178,7 +178,8 @@ services:
 将CTFd-Whale克隆至CTFd的插件目录
 
 ```bash
-git clone https://github.com/frankli0324/CTFd-Whale CTFd/plugins/ctfd-whale
+git clone https://github.com/frankli0324/CTFd-Whale CTFd/plugins/ctfd-whale --depth=1
+docker-compose build # 需要安装依赖
 docker-compose up -d
 ```
 

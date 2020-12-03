@@ -18,7 +18,7 @@ After initializing a swarm, make sure that CTFd runs as expected on your PC/serv
 Note that the included compose file in CTFd 2.5.0+ starts an nginx container by default, which takes the http/80 port. make sure there's no conflicts.
 
 ```bash
-git pull https://github.com/CTFd/CTFd
+git clone https://github.com/CTFd/CTFd --depth=1
 cd CTFd  # the cwd will not change throughout this guide from this line on
 ```
 
@@ -181,7 +181,8 @@ services:
 and then clone Whale into CTFd plugins directory (yes, finally)
 
 ```bash
-git clone https://github.com/frankli0324/CTFd-Whale CTFd/plugins/ctfd-whale
+git clone https://github.com/frankli0324/CTFd-Whale CTFd/plugins/ctfd-whale --depth=1
+docker-compose build # for pip to find requirements.txt
 docker-compose up -d
 ```
 
