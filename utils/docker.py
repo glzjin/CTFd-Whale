@@ -14,26 +14,29 @@ from .redis import RedisUtils
 class DockerUtils:
     @staticmethod
     def init():
-        client = docker.DockerClient(base_url=DBConfig.get_config("docker_api_url"))
-        credentials = DBConfig.get_config("docker_credentials")
-        if credentials and credentials.count(':') == 1:
-            client.login(*credentials.split(':'))
-
-    @staticmethod
-    def add_container(container):
-        configs = DBConfig.get_all_configs()
         try:
-            client = docker.DockerClient(base_url=configs["docker_api_url"])
+            DockerUtils.client = docker.DockerClient(base_url=DBConfig.get_config("docker_api_url"))
+            # docker-py is thread safe: https://github.com/docker/docker-py/issues/619
         except Exception as e:
             raise WhaleError(
                 'Docker Connection Error' +
                 'Please ensure the docker api url (first config item) is correct' +
                 'if you are using unix:///var/run/docker.sock, check if the socket is correctly mapped'
             )
+        credentials = DBConfig.get_config("docker_credentials")
+        if credentials and credentials.count(':') == 1:
+            try:
+                DockerUtils.client.login(*credentials.split(':'))
+            except:
+                raise WhaleError('docker.io failed to login, check your credentials')
+
+    @staticmethod
+    def add_container(container):
+        configs = DBConfig.get_all_configs()
         if container.challenge.docker_image.startswith("{"):
-            DockerUtils._create_grouped_container(client, container, configs)
+            DockerUtils._create_grouped_container(DockerUtils.client, container, configs)
         else:
-            DockerUtils._create_standalone_container(client, container, configs)
+            DockerUtils._create_standalone_container(DockerUtils.client, container, configs)
 
     @staticmethod
     def _create_standalone_container(client, container, configs):
@@ -129,18 +132,10 @@ class DockerUtils:
 
         whale_id = f'{container.user_id}-{container.uuid}'
 
-        try:
-            client = docker.DockerClient(base_url=configs.get("docker_api_url"))
-        except Exception as e:
-            raise WhaleError(
-                'Docker Connection Error\n' +
-                'Please ensure the docker api url (first config item) is correct\n' +
-                'if you are using unix:///var/run/docker.sock, check if the socket is correctly mapped'
-            )
-        for s in client.services.list(filters={'label': f'whale_id={whale_id}'}):
+        for s in DockerUtils.client.services.list(filters={'label': f'whale_id={whale_id}'}):
             s.remove()
 
-        networks = client.networks.list(names=[whale_id])
+        networks = DockerUtils.client.networks.list(names=[whale_id])
         if len(networks) > 0:  # is grouped containers
             auto_containers = configs.get("docker_auto_connect_containers", "").split(",")
             redis_util = RedisUtils(app=current_app)
