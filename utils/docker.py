@@ -13,6 +13,13 @@ from .redis import RedisUtils
 
 class DockerUtils:
     @staticmethod
+    def init():
+        client = docker.DockerClient(base_url=DBConfig.get_config("docker_api_url"))
+        credentials = DBConfig.get_config("docker_credentials")
+        if credentials and credentials.count(':') == 1:
+            client.login(*credentials.split(':'))
+
+    @staticmethod
     def add_container(container):
         configs = DBConfig.get_all_configs()
         try:

@@ -17,6 +17,7 @@ from .api import *
 from .challenge_type import DynamicValueDockerChallenge
 from .utils.control import ControlUtil
 from .utils.db import DBContainer, DBConfig
+from .utils.docker import DockerUtils
 from .utils.exceptions import WhaleError
 from .utils.redis import RedisUtils
 from .utils.setup import setup_default_configs
@@ -45,6 +46,7 @@ def load(app):
     )
     CTFd_API_v1.add_namespace(admin_namespace, path="/plugins/ctfd-whale/admin")
     CTFd_API_v1.add_namespace(user_namespace, path="/plugins/ctfd-whale")
+    DockerUtils.init()
 
     @page_blueprint.route('/admin/settings', methods=['GET', 'POST'])
     @admins_only
@@ -53,6 +55,7 @@ def load(app):
             data = request.form.to_dict()
             data.pop('nonce')
             DBConfig.set_all_configs(data)
+            DockerUtils.init()
             RedisUtils(app=current_app).init_redis_port_sets()
         session["nonce"] = generate_nonce()
         configs = DBConfig.get_all_configs()

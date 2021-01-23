@@ -6,6 +6,7 @@ def setup_default_configs():
     DBConfig.set_all_configs({
         'setup': 'true',
         'docker_api_url': 'unix:///var/run/docker.sock',
+        'docker_credentials': '',
         'docker_dns': '127.0.0.1',
         'docker_max_container_count': '100',
         'docker_max_renew_count': '5',
