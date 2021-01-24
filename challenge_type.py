@@ -9,6 +9,7 @@ from CTFd.plugins.dynamic_challenges import DynamicValueChallenge
 from CTFd.plugins.flags import get_flag_class
 from CTFd.utils import user as current_user
 from .models import WhaleContainer, DynamicDockerChallenge
+from .utils.control import ControlUtil
 
 
 class DynamicValueDockerChallenge(BaseChallenge):
