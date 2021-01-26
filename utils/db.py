@@ -83,7 +83,6 @@ class DBContainer:
         q = q.filter(WhaleContainer.user_id == user_id)
         q.delete()
         db.session.commit()
-        db.session.close()
 
     @staticmethod
     def get_all_expired_container():
