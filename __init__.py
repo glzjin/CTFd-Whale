@@ -29,10 +29,26 @@ def load(app):
     app.db.create_all()
     if not DBConfig.get_config("setup"):
         setup_default_configs()
-    CHALLENGE_CLASSES["dynamic_docker"] = DynamicValueDockerChallenge
+    
     register_plugin_assets_directory(
-        app, base_path="/plugins/" + plugin_name + "/assets/"
+        app, base_path="/plugins/" + plugin_name + "/assets/",
+        endpoint='plugins.ctfd-whale.assets'
     )
+    register_admin_plugin_menu_bar(
+        'Whale', '/plugins/ctfd-whale/admin/settings'
+    )
+
+    DynamicValueDockerChallenge.templates = {
+        "create": f"/plugins/{plugin_name}/assets/create.html",
+        "update": f"/plugins/{plugin_name}/assets/update.html",
+        "view": f"/plugins/{plugin_name}/assets/view.html",
+    }
+    DynamicValueDockerChallenge.scripts = {
+        "create": "/plugins/ctfd-whale/assets/create.js",
+        "update": "/plugins/ctfd-whale/assets/update.js",
+        "view": "/plugins/ctfd-whale/assets/view.js",
+    }
+    CHALLENGE_CLASSES["dynamic_docker"] = DynamicValueDockerChallenge
 
     page_blueprint = Blueprint(
         "ctfd-whale",
@@ -40,9 +56,6 @@ def load(app):
         template_folder="templates",
         static_folder="assets",
         url_prefix="/plugins/ctfd-whale"
-    )
-    register_admin_plugin_menu_bar(
-        'Whale', '/plugins/ctfd-whale/admin/settings'
     )
     CTFd_API_v1.add_namespace(admin_namespace, path="/plugins/ctfd-whale/admin")
     CTFd_API_v1.add_namespace(user_namespace, path="/plugins/ctfd-whale")

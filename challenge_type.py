@@ -15,18 +15,6 @@ from .utils.control import ControlUtil
 class DynamicValueDockerChallenge(BaseChallenge):
     id = "dynamic_docker"  # Unique identifier used to register challenges
     name = "dynamic_docker"  # Name of a challenge type
-    templates = {  # Handlebars templates used for each aspect of challenge editing & viewing
-        "create": "/plugins/ctfd-whale/assets/create.html",
-        "update": "/plugins/ctfd-whale/assets/update.html",
-        "view": "/plugins/ctfd-whale/assets/view.html",
-    }
-    scripts = {  # Scripts that are loaded when a template is loaded
-        "create": "/plugins/ctfd-whale/assets/create.js",
-        "update": "/plugins/ctfd-whale/assets/update.js",
-        "view": "/plugins/ctfd-whale/assets/view.js",
-    }
-    # Route at which files are accessible. This must be registered using register_plugin_assets_directory()
-    route = "/plugins/ctfd-whale/assets/"
     # Blueprint used to access the static_folder directory.
     blueprint = Blueprint(
         "ctfd-whale-challenge",
@@ -34,31 +22,10 @@ class DynamicValueDockerChallenge(BaseChallenge):
         template_folder="templates",
         static_folder="assets",
     )
-
-    @classmethod
-    def create(cls, request):
-        """
-        This method is used to process the challenge creation request.
-
-        :param request:
-        :return:
-        """
-        data = request.form or request.get_json()
-        challenge = DynamicDockerChallenge(**data)
-
-        db.session.add(challenge)
-        db.session.commit()
-
-        return challenge
+    challenge_model = DynamicDockerChallenge
 
     @classmethod
     def read(cls, challenge):
-        """
-        This method is in used to access the data of a challenge in a format processable by the front end.
-
-        :param challenge:
-        :return: Challenge object, data dictionary to be returned to the user
-        """
         challenge = DynamicDockerChallenge.query.filter_by(id=challenge.id).first()
         data = {
             "id": challenge.id,
@@ -83,14 +50,6 @@ class DynamicValueDockerChallenge(BaseChallenge):
 
     @classmethod
     def update(cls, challenge, request):
-        """
-        This method is used to update the information associated with a challenge. This should be kept strictly to the
-        Challenges table and any child tables.
-
-        :param challenge:
-        :param request:
-        :return:
-        """
         data = request.form or request.get_json()
 
         for attr, value in data.items():
@@ -107,15 +66,6 @@ class DynamicValueDockerChallenge(BaseChallenge):
 
     @classmethod
     def attempt(cls, challenge, request):
-        """
-        This method is used to check whether a given input is right or wrong. It does not make any changes and should
-        return a boolean for correctness and a string to be shown to the user. It is also in charge of parsing the
-        user's input from the request itself.
-
-        :param challenge: The Challenge object from the database
-        :param request: The request the user submitted
-        :return: (boolean, string)
-        """
         data = request.form or request.get_json()
         submission = data["submission"].strip()
 
@@ -142,14 +92,6 @@ class DynamicValueDockerChallenge(BaseChallenge):
 
     @classmethod
     def solve(cls, user, team, challenge, request):
-        """
-        This method is used to insert Solves into the database in order to mark a challenge as solved.
-
-        :param team: The Team object from the database
-        :param chal: The Challenge object from the database
-        :param request: The request the user submitted
-        :return:
-        """
         super().solve(user, team, challenge, request)
 
         if challenge.dynamic_score == 1:
@@ -160,9 +102,6 @@ class DynamicValueDockerChallenge(BaseChallenge):
 
     @classmethod
     def delete(cls, challenge):
-        DynamicDockerChallenge.query.filter_by(
-            id=challenge.id
-        ).delete()
         for container in WhaleContainer.query.filter_by(
             challenge_id=challenge.id
         ).all():
