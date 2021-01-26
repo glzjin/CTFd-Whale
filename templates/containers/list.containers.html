@@ -1,24 +1,36 @@
+<svg hidden>
+    <symbol id="copy" viewBox="0 0 24 24">
+        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"></path>
+    </symbol>
+</svg>
 <div class="row">
     <div class="col-md-12">
-        <table class="table table-striped">
+        <table class="table table-striped border">
             <thead>
             <tr>
-                <td class="text-center"><b>No</b></td>
-                <td class="text-center"><b>ID</b></td>
-                <td class="text-center"><b>User</b></td>
-                <td class="text-center"><b>Challenge</b></td>
-                <td class="text-center"><b>Access Method</b></td>
-                <td class="text-center"><b>Flag</b></td>
-                <td class="text-center"><b>Startup Time</b></td>
-                <td class="text-center"><b>Renewal Times</b></td>
-                <td class="text-center"><b>Delete</b></td>
-                <td class="text-center"><b>Renew</b></td>
+                <th class="border-right" data-checkbox>
+                    <div class="form-check text-center">&nbsp;
+                        <input type="checkbox" class="form-check-input" data-checkbox-all>
+                    </div>
+                </th>
+                <th class="sort-col text-center"><b>ID</b></td>
+                <th class="text-center"><b>User</b></td>
+                <th class="sort-col text-center"><b>Challenge</b></td>
+                <th class="text-center"><b>Access Method</b></td>
+                <th class="text-center"><b>Flag</b></td>
+                <th class="sort-col text-center"><b>Startup Time</b></td>
+                <th class="sort-col text-center"><b>Renewal Times</b></td>
+                <th class="text-center"><b>Delete</b></td>
             </tr>
             </thead>
             <tbody>
             {% for container in containers %}
                 <tr>
-                    <th scope="row" class="text-center">{{ curr_page_start + loop.index }}</th>
+                    <td class="border-right" data-checkbox>
+                        <div class="form-check text-center">&nbsp;
+                            <input type="checkbox" class="form-check-input" value="{{ container.id }}" data-user-id="{{ container.id }}">
+                        </div>
+                    </td>
                     <td class="text-center">
                         {{ container.id }}
                     </td>
@@ -33,30 +45,35 @@
                         </a>
                     </td>
                     <td class="text-center">
-                        {{ container.user_access }}
+                        {{ container.challenge.redirect_type }}&nbsp;
+                        <svg class="click-copy" data-copy="{{ container.user_access }}"
+                            height="24" width="24" style="cursor: pointer;">
+                            <use xlink:href="#copy" />
+                        </svg>
                     </td>
                     <td class="text-center">
-                        {{ container.flag }}
+                        <svg class="click-copy" data-copy="{{ container.flag }}"
+                            height="24" width="24" style="cursor: pointer;">
+                            <use xlink:href="#copy" />
+                        </svg>
                     </td>
                     <td class="text-center">
                         {{ container.start_time }}
                     </td>
                     <td class="text-center">
-                        {{ container.renew_count }}
+                        {{ container.renew_count }}&nbsp;
+                        <a class="renew-container" container-id="{{ container.id }}" data-toggle="tooltip"
+                           user-id="{{ container.user.id }}" data-placement="top"
+                           challenge-id="{{ container.challenge_id }}"
+                           title="Renew Container #{{ container.id }}">
+                            <i class="fas fa-sync"></i>
+                        </a>
                     </td>
                     <td class="text-center">
                         <a class="delete-container" container-id="{{ container.id }}" data-toggle="tooltip"
                            user-id="{{ container.user.id }}" data-placement="top"
                            title="Destroy Container #{{ container.id }}">
                             <i class="fas fa-times"></i>
-                        </a>
-                    </td>
-                    <td class="text-center">
-                        <a class="renew-container" container-id="{{ container.id }}" data-toggle="tooltip"
-                           user-id="{{ container.user.id }}" data-placement="top"
-                           challenge-id="{{ container.challenge_id }}"
-                           title="Renew Container #{{ container.id }}">
-                            <i class="fas fa-sync"></i>
                         </a>
                     </td>
                 </tr>
