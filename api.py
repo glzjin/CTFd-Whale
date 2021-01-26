@@ -72,10 +72,10 @@ class AdminContainers(Resource):
     @staticmethod
     @admins_only
     def patch():
-        user_id = request.args.get('user_id')
-        challenge_id = request.args.get('challenge_id')
+        user_id = request.args.get('user_id', -1)
+        challenge_id = request.args.get('challenge_id', -1)
         result, message = ControlUtil.try_renew_container(
-            user_id=user_id, challenge_id=challenge_id
+            user_id=int(user_id), challenge_id=int(challenge_id)
         )
         if not result:
             abort(403, message)
@@ -148,7 +148,7 @@ class UserContainers(Resource):
             abort(403, 'Instance not found.')
         if container.renew_count >= docker_max_renew_count:
             abort(403, 'Max renewal count exceed.')
-        challenge_id = int(request.args.get('challenge_id'))
+        challenge_id = int(request.args.get('challenge_id', -1))
         result, message = ControlUtil.try_renew_container(
             user_id=user_id, challenge_id=challenge_id
         )
