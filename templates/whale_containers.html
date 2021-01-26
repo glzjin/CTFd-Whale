@@ -17,9 +17,9 @@
                     <span class="sr-only">Previous</span>
                 </a>
             </li>
-            {% set range_l = [[curr_page - 1, 1]|max, [pages - 4, 1]|max]|min %}
-            {% set range_r = [[curr_page + 3, pages]|min, [5, pages + 1]|min]|max %}
-            {% for page in range(range_l, range_r) %}
+            {% set range_l = [[curr_page - 1, 1]|max, [pages - 3, 1]|max]|min %}
+            {% set range_r = [[curr_page + 2, pages]|min, [4, pages]|min]|max %}
+            {% for page in range(range_l, range_r + 1) %}
                 <li class="page-item{{ ' active' if curr_page == page }}">
                     <a class="page-link"
                        href="/plugins/ctfd-whale/admin/containers?page={{ page }}"
@@ -51,5 +51,5 @@
 {% endblock %}
 
 {% block scripts %}
-    <script defer src="{{ url_for('plugins.'+ plugin_name +'.assets', path='containers.js') }}"></script>
+    <script defer src="{{ url_for('plugins.ctfd-whale.assets', path='containers.js') }}"></script>
 {% endblock %}
