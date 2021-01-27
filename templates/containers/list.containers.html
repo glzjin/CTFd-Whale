@@ -28,7 +28,7 @@
                 <tr>
                     <td class="border-right" data-checkbox>
                         <div class="form-check text-center">&nbsp;
-                            <input type="checkbox" class="form-check-input" value="{{ container.id }}" data-user-id="{{ container.id }}">
+                            <input type="checkbox" class="form-check-input" data-user-id="{{ container.user.id }}">
                         </div>
                     </td>
                     <td class="text-center">
@@ -64,7 +64,6 @@
                         {{ container.renew_count }}&nbsp;
                         <a class="renew-container" container-id="{{ container.id }}" data-toggle="tooltip"
                            user-id="{{ container.user.id }}" data-placement="top"
-                           challenge-id="{{ container.challenge_id }}"
                            title="Renew Container #{{ container.id }}">
                             <i class="fas fa-sync"></i>
                         </a>

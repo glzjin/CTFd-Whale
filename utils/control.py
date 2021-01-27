@@ -36,9 +36,9 @@ class ControlUtil:
         return False, 'Failed when destroying instance, please contact admin!'
 
     @staticmethod
-    def try_renew_container(user_id, challenge_id):
+    def try_renew_container(user_id):
         container = DBContainer.get_current_containers(user_id)
-        if not container or container.challenge_id != challenge_id:
+        if not container:
             return False, 'No such container'
         timeout = int(DBConfig.get_config("docker_timeout", "3600"))
         container.start_time = container.start_time + \

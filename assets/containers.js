@@ -31,40 +31,72 @@ $(".click-copy").click(function (e) {
     copyToClipboard(e, $(this).data("copy"));
 })
 
+async function delete_container(user_id) {
+    let response = await CTFd.fetch("/api/v1/plugins/ctfd-whale/admin/container?user_id=" + user_id, {
+        method: "DELETE",
+        credentials: "same-origin",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+        }
+    });
+    response = await response.json();
+    return response.success;
+}
+async function renew_container(user_id) {
+    let response = await CTFd.fetch(
+        "/api/v1/plugins/ctfd-whale/admin/container?user_id=" + user_id, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+        }
+    });
+    response = await response.json();
+    return response.success;
+}
+
+$('#containers-renew-button').click(function (e) {
+    let users = $("input[data-user-id]:checked").map(function () {
+        return $(this).data("user-id");
+    });
+    CTFd.ui.ezq.ezQuery({
+        title: "Renew Containers",
+        body: `Are you sure you want to renew the selected ${users.length} container(s)?`,
+        success: async function () {
+            await Promise.all(users.toArray().map((user) => renew_container(user)));
+            location.reload();
+        }
+    });
+});
+
+$('#containers-delete-button').click(function (e) {
+    let users = $("input[data-user-id]:checked").map(function () {
+        return $(this).data("user-id");
+    });
+    CTFd.ui.ezq.ezQuery({
+        title: "Delete Containers",
+        body: `Are you sure you want to delete the selected ${users.length} container(s)?`,
+        success: async function () {
+            await Promise.all(users.toArray().map((user) => delete_container(user)));
+            location.reload();
+        }
+    });
+});
+
 $(".delete-container").click(function (e) {
     e.preventDefault();
-    var container_id = $(this).attr("container-id");
-    var user_id = $(this).attr("user-id");
-
-    var body = "<span>Are you sure you want to delete <strong>Container #{0}</strong>?</span>".format(
-        htmlentities(container_id)
-    );
-
-    var row = $(this)
-        .parent()
-        .parent();
+    let container_id = $(this).attr("container-id");
+    let user_id = $(this).attr("user-id");
 
     CTFd.ui.ezq.ezQuery({
         title: "Destroy Container",
-        body: body,
+        body: "<span>Are you sure you want to delete <strong>Container #{0}</strong>?</span>".format(
+            htmlentities(container_id)
+        ),
         success: async function () {
-            let response = await CTFd.fetch("/api/v1/plugins/ctfd-whale/admin/container?user_id=" + user_id, {
-                method: "DELETE",
-                credentials: "same-origin",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json"
-                }
-            });
-            response = await response.json();
-            if (response.success !== true) {
-                $(this).tooltip({
-                    title: 'failed',
-                    trigger: "manual"
-                })
-                $(this).tooltip("show");
-                return;
-            }
+            await delete_container(user_id);
             location.reload();
         }
     });
@@ -72,35 +104,17 @@ $(".delete-container").click(function (e) {
 
 $(".renew-container").click(function (e) {
     e.preventDefault();
-    var container_id = $(this).attr("container-id");
-    var challenge_id = $(this).attr("challenge-id");
-    var user_id = $(this).attr("user-id");
-
-    var body = "<span>Are you sure you want to renew <strong>Container #{0}</strong>?</span>".format(
-        htmlentities(container_id)
-    );
+    let container_id = $(this).attr("container-id");
+    let user_id = $(this).attr("user-id");
 
     CTFd.ui.ezq.ezQuery({
         title: "Renew Container",
-        body: body,
+        body: "<span>Are you sure you want to renew <strong>Container #{0}</strong>?</span>".format(
+            htmlentities(container_id)
+        ),
         success: async function () {
-            let response = await CTFd.fetch(
-                "/api/v1/plugins/ctfd-whale/admin/container?user_id=" + user_id + "&challenge_id=" + challenge_id, {
-                method: "PATCH",
-                credentials: "same-origin",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json"
-                }
-            });
-            response = await response.json();
-            if (response.success === true) {
-                CTFd.ui.ezq.ezAlert({
-                    title: "Success",
-                    body: "This instance has been renewed!",
-                    button: "OK"
-                })
-            }
-        }
+            await renew_container(user_id);
+            location.reload();
+        },
     });
 });

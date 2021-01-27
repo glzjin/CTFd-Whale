@@ -134,8 +134,7 @@ CTFd._internal.challenge.destroy = function () {
 };
 
 CTFd._internal.challenge.renew = function () {
-    var challenge_id = $('#challenge-id').val();
-    var url = "/api/v1/plugins/ctfd-whale/container?challenge_id=" + challenge_id;
+    var url = "/api/v1/plugins/ctfd-whale/container";
 
     $('#whale-button-renew')[0].innerHTML = "Waiting...";
     $('#whale-button-renew')[0].disabled = true;

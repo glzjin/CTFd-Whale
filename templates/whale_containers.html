@@ -7,6 +7,20 @@
     <li class="nav-item">
         <a class="nav-link active" href="#">Instances</a>
     </li>
+
+    <li class="nav-item nav-link">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary"
+                data-toggle="tooltip" title="Renew Containers" id="containers-renew-button">
+                <i class="btn-fa fas fa-sync"></i>
+            </button>
+            <button type="button" class="btn btn-outline-danger"
+                data-toggle="tooltip" title="Stop Containers" id="containers-delete-button">
+                <i class="btn-fa fas fa-times"></i>
+            </button>
+        </div>
+    </li>
+
     <li class="nav-item nav-link">
         <ul class="pagination">
             <li class="page-item{{ ' disabled' if curr_page <= 1 else '' }}">
@@ -36,7 +50,7 @@
             </li>
         </ul>
     </li>
-
+    
     <li class="nav-item nav-link">
         {% if session['view_mode'] == 'card' %}
             <a href="?mode=list">Switch to list mode</a>
