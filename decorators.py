@@ -6,7 +6,7 @@ from sqlalchemy.sql import and_
 
 from CTFd.models import Challenges
 from CTFd.utils.user import is_admin, get_current_user
-from .utils.redis import RedisUtils
+from .utils.cache import CacheProvider
 
 
 def challenge_visible(func):
@@ -32,7 +32,7 @@ def frequency_limited(func):
     def _frequency_limited(*args, **kwargs):
         if is_admin():
             return func(*args, **kwargs)
-        redis_util = RedisUtils(app=current_app, user_id=get_current_user().id)
+        redis_util = CacheProvider(app=current_app, user_id=get_current_user().id)
         if not redis_util.acquire_lock():
             abort(403, 'Request Too Fast!')
 

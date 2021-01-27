@@ -7,20 +7,17 @@ from redis.exceptions import LockError
 from .db import DBContainer, DBConfig
 
 
-class RedisUtils(FlaskRedis):
-    def __init__(self, user_id=0, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.key = 'ctfd_whale_lock-' + str(user_id)
-        self.current_lock = None
-        self.global_port_key = "ctfd_whale-port-set"
-        self.global_network_key = "ctfd_whale-network-set"
+class CacheProvider:
+    def __init__(self, app, *args, **kwargs):
+        if app.config['CACHE_TYPE'] == 'redis':
+            self.provider = RedisCacheProvider(app, *args, **kwargs)
+        elif app.config['CACHE_TYPE'] == 'filesystem':
+            self.provider = MemoryCacheProvider(app, *args, **kwargs)
 
-    def init_redis_port_sets(self):
+    def init_port_sets(self):
+        self.clear()
+
         configs = DBConfig.get_all_configs()
-
-        self.delete(self.global_port_key)
-        self.delete(self.global_network_key)
-
         containers = DBContainer.get_all_container()
         used_port_list = []
         for container in containers:
@@ -37,7 +34,8 @@ class RedisUtils(FlaskRedis):
             docker_subnet = unicode(docker_subnet)
         except:
             pass
-        docker_subnet_new_prefix = int(configs.get("docker_subnet_new_prefix", "24"))
+        docker_subnet_new_prefix = int(
+            configs.get("docker_subnet_new_prefix", "24"))
 
         exist_networks = []
         available_networks = []
@@ -49,10 +47,55 @@ class RedisUtils(FlaskRedis):
             if str(network) not in exist_networks:
                 available_networks.append(str(network))
 
-        self.sadd(self.global_network_key, *set(available_networks))
+        self.add_available_network_range(*set(available_networks))
 
-    def add_available_network_range(self, network_range):
-        self.sadd(self.global_network_key, network_range.encode())
+    def __getattr__(self, name):
+        return self.provider.__getattribute__(name)
+
+
+class MemoryCacheProvider:
+    def __init__(self, app, *args, **kwargs):
+        self.key = 'ctfd_whale_lock-' + str(kwargs.get('user_id', 0))
+        self.global_port_key = "ctfd_whale-port-set"
+        self.global_network_key = "ctfd_whale-network-set"
+
+# TODO:
+    def clear(self):
+        pass
+
+    def add_available_network_range(self, *ranges):
+        pass
+
+    def get_available_network_range(self):
+        pass
+
+    def add_available_port(self, port):
+        pass
+
+    def get_available_port(self):
+        pass
+
+    def acquire_lock(self):
+        pass
+
+    def release_lock(self):
+        pass
+
+
+class RedisCacheProvider(FlaskRedis):
+    def __init__(self, app, *args, **kwargs):
+        super().__init__(app)
+        self.key = 'ctfd_whale_lock-' + str(kwargs.get('user_id', 0))
+        self.current_lock = None
+        self.global_port_key = "ctfd_whale-port-set"
+        self.global_network_key = "ctfd_whale-network-set"
+
+    def clear(self):
+        self.delete(self.global_port_key)
+        self.delete(self.global_network_key)
+
+    def add_available_network_range(self, *ranges):
+        self.sadd(self.global_network_key, *ranges)
 
     def get_available_network_range(self):
         return self.spop(self.global_network_key).decode()

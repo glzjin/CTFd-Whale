@@ -5,13 +5,13 @@ from flask import current_app
 
 from .db import DBContainer, DBConfig, db
 from .docker import DockerUtils
-from .redis import RedisUtils
+from .cache import CacheProvider
 
 
 class ControlUtil:
     @staticmethod
     def try_add_container(user_id, challenge_id):
-        port = RedisUtils(app=current_app).get_available_port()
+        port = CacheProvider(app=current_app).get_available_port()
         if not port:
             return False, 'No available ports. Please wait for a few minutes.'
         container = DBContainer.create_container_record(user_id, challenge_id, port)
@@ -27,7 +27,7 @@ class ControlUtil:
             try:
                 DockerUtils.remove_container(container)
                 if container.port != 0:
-                    redis_util = RedisUtils(app=current_app)
+                    redis_util = CacheProvider(app=current_app)
                     redis_util.add_available_port(container.port)
                 DBContainer.remove_container_record(user_id)
                 return True, 'Container destroyed'

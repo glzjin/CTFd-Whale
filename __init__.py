@@ -19,7 +19,7 @@ from .utils.control import ControlUtil
 from .utils.db import DBContainer, DBConfig
 from .utils.docker import DockerUtils
 from .utils.exceptions import WhaleError
-from .utils.redis import RedisUtils
+from .utils.cache import CacheProvider
 from .utils.setup import setup_default_configs
 
 
@@ -69,7 +69,7 @@ def load(app):
             data.pop('nonce')
             DBConfig.set_all_configs(data)
             DockerUtils.init()
-            RedisUtils(app=current_app).init_redis_port_sets()
+            CacheProvider(app=current_app).init_port_sets()
         session["nonce"] = generate_nonce()
         configs = DBConfig.get_all_configs()
         return render_template('whale_config.html', configs=configs)
@@ -140,8 +140,8 @@ def load(app):
             trigger="interval", seconds=10
         )
 
-        redis_util = RedisUtils(app=app)
-        redis_util.init_redis_port_sets()
+        redis_util = CacheProvider(app=app)
+        redis_util.init_port_sets()
 
         print("[CTFd Whale]Started successfully")
     except IOError:

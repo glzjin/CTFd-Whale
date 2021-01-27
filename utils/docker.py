@@ -8,7 +8,7 @@ from flask import current_app
 
 from .db import DBConfig
 from .exceptions import WhaleError
-from .redis import RedisUtils
+from .cache import CacheProvider
 
 
 class DockerUtils:
@@ -65,7 +65,7 @@ class DockerUtils:
 
     @staticmethod
     def _create_grouped_container(client, container, configs):
-        range_prefix = RedisUtils(app=current_app).get_available_network_range()
+        range_prefix = CacheProvider(app=current_app).get_available_network_range()
 
         ipam_pool = docker.types.IPAMPool(subnet=range_prefix)
         ipam_config = docker.types.IPAMConfig(
@@ -138,7 +138,7 @@ class DockerUtils:
         networks = DockerUtils.client.networks.list(names=[whale_id])
         if len(networks) > 0:  # is grouped containers
             auto_containers = configs.get("docker_auto_connect_containers", "").split(",")
-            redis_util = RedisUtils(app=current_app)
+            redis_util = CacheProvider(app=current_app)
             for network in networks:
                 for container in auto_containers:
                     try:
