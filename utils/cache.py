@@ -1,8 +1,13 @@
 import ipaddress
+import threading
+import warnings
 
 import docker
 from flask_redis import FlaskRedis
+from flask_caching import Cache
 from redis.exceptions import LockError
+
+from CTFd.cache import cache
 
 from .db import DBContainer, DBConfig
 
@@ -12,7 +17,9 @@ class CacheProvider:
         if app.config['CACHE_TYPE'] == 'redis':
             self.provider = RedisCacheProvider(app, *args, **kwargs)
         elif app.config['CACHE_TYPE'] == 'filesystem':
-            self.provider = MemoryCacheProvider(app, *args, **kwargs)
+            if not hasattr(CacheProvider, 'cache'):
+                CacheProvider.cache = {}
+            self.provider = FilesystemCacheProvider(app, *args, **kwargs)
 
     def init_port_sets(self):
         self.clear()
@@ -53,33 +60,55 @@ class CacheProvider:
         return self.provider.__getattribute__(name)
 
 
-class MemoryCacheProvider:
+class FilesystemCacheProvider:
     def __init__(self, app, *args, **kwargs):
+        warnings.warn(
+            '\n[CTFd Whale] Warning: looks like you are using filesystem cache. '
+            '\nThis is for TESTING purposes only, DO NOT USE on production sites.',
+            RuntimeWarning
+        )
         self.key = 'ctfd_whale_lock-' + str(kwargs.get('user_id', 0))
         self.global_port_key = "ctfd_whale-port-set"
         self.global_network_key = "ctfd_whale-network-set"
 
-# TODO:
     def clear(self):
-        pass
+        cache.set(self.global_port_key, set())
+        cache.set(self.global_network_key, set())
 
     def add_available_network_range(self, *ranges):
-        pass
+        s = cache.get(self.global_network_key)
+        s.update(ranges)
+        cache.set(self.global_network_key, s)
 
     def get_available_network_range(self):
-        pass
+        try:
+            s = cache.get(self.global_network_key)
+            r = s.pop()
+            cache.set(self.global_network_key, s)
+            return r
+        except KeyError:
+            return None
 
     def add_available_port(self, port):
-        pass
+        s = cache.get(self.global_port_key)
+        s.add(port)
+        cache.set(self.global_port_key, s)
 
     def get_available_port(self):
-        pass
+        try:
+            s = cache.get(self.global_port_key)
+            r = s.pop()
+            cache.set(self.global_port_key, s)
+            return r
+        except KeyError:
+            return None
 
     def acquire_lock(self):
-        pass
+        # for testing purposes only, so no need to set this limit
+        return True
 
     def release_lock(self):
-        pass
+        return True
 
 
 class RedisCacheProvider(FlaskRedis):
