@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from flask import request, abort
 from flask_restx import Namespace, Resource
 from werkzeug.exceptions import Forbidden, NotFound

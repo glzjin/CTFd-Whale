@@ -1,7 +1,6 @@
 import random
 import uuid
 from datetime import datetime
-
 from jinja2 import Template
 
 from CTFd.models import db, Challenges

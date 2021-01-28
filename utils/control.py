@@ -1,11 +1,10 @@
 import datetime
 import traceback
-
 from flask import current_app
 
+from .cache import CacheProvider
 from .db import DBContainer, DBConfig, db
 from .docker import DockerUtils
-from .cache import CacheProvider
 
 
 class ControlUtil:

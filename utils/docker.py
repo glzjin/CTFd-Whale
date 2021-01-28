@@ -1,14 +1,13 @@
+import docker
 import json
 import random
 import uuid
 from collections import OrderedDict
-
-import docker
 from flask import current_app
 
+from .cache import CacheProvider
 from .db import DBConfig
 from .exceptions import WhaleError
-from .cache import CacheProvider
 
 
 class DockerUtils:

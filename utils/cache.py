@@ -1,14 +1,12 @@
+import docker
 import ipaddress
 import threading
 import warnings
-
-import docker
-from flask_redis import FlaskRedis
 from flask_caching import Cache
+from flask_redis import FlaskRedis
 from redis.exceptions import LockError
 
 from CTFd.cache import cache
-
 from .db import DBContainer, DBConfig
 
 

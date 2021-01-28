@@ -1,6 +1,5 @@
 import functools
 import time
-
 from flask import request, current_app, abort, session
 from sqlalchemy.sql import and_
 

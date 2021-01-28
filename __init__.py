@@ -1,7 +1,6 @@
 from __future__ import division  # Use floating point for math calculations
 
 import fcntl
-
 import requests
 from flask import Blueprint, render_template, session, current_app
 from flask_apscheduler import APScheduler
@@ -15,11 +14,11 @@ from CTFd.plugins.challenges import CHALLENGE_CLASSES
 from CTFd.utils.security.csrf import generate_nonce
 from .api import *
 from .challenge_type import DynamicValueDockerChallenge
+from .utils.cache import CacheProvider
 from .utils.control import ControlUtil
 from .utils.db import DBContainer, DBConfig
 from .utils.docker import DockerUtils
 from .utils.exceptions import WhaleError
-from .utils.cache import CacheProvider
 from .utils.setup import setup_default_configs
 
 
@@ -29,7 +28,7 @@ def load(app):
     app.db.create_all()
     if not DBConfig.get_config("setup"):
         setup_default_configs()
-    
+
     register_plugin_assets_directory(
         app, base_path="/plugins/" + plugin_name + "/assets/",
         endpoint='plugins.ctfd-whale.assets'
@@ -143,6 +142,6 @@ def load(app):
         redis_util = CacheProvider(app=app)
         redis_util.init_port_sets()
 
-        print("[CTFd Whale]Started successfully")
+        print("[CTFd Whale] Started successfully")
     except IOError:
         pass
