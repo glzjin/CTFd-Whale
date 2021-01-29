@@ -1,6 +1,5 @@
-from __future__ import division  # Use floating point for math calculations
-
 import fcntl
+
 import requests
 from flask import Blueprint, render_template, session, current_app
 from flask_apscheduler import APScheduler
@@ -12,6 +11,7 @@ from CTFd.plugins import (
 )
 from CTFd.plugins.challenges import CHALLENGE_CLASSES
 from CTFd.utils.security.csrf import generate_nonce
+from CTFd.utils import get_config, set_config
 from .api import *
 from .challenge_type import DynamicValueDockerChallenge
 from .utils.cache import CacheProvider
@@ -25,16 +25,18 @@ from .utils.setup import setup_default_configs
 def load(app):
     # upgrade()
     plugin_name = __name__.split('.')[-1]
+    set_config('whale:plugin_name', plugin_name)
     app.db.create_all()
-    if not DBConfig.get_config("setup"):
-        setup_default_configs()
+    if not get_config("whale:setup"):
+        if not DBConfig.get_config('setup'):
+            setup_default_configs()
+        else:
+            for key, val in DBConfig.get_all_configs().items():
+                set_config('whale:' + key, val)
 
     register_plugin_assets_directory(
-        app, base_path="/plugins/" + plugin_name + "/assets/",
+        app, base_path=f"/plugins/{plugin_name}/assets",
         endpoint='plugins.ctfd-whale.assets'
-    )
-    register_admin_plugin_menu_bar(
-        'Whale', '/plugins/ctfd-whale/admin/settings'
     )
 
     DynamicValueDockerChallenge.templates = {
@@ -60,18 +62,13 @@ def load(app):
     CTFd_API_v1.add_namespace(user_namespace, path="/plugins/ctfd-whale")
     DockerUtils.init()
 
-    @page_blueprint.route('/admin/settings', methods=['GET', 'POST'])
+    @page_blueprint.route('/admin/settings')
     @admins_only
     def admin_list_configs():
-        if request.method == 'POST':
-            data = request.form.to_dict()
-            data.pop('nonce')
-            DBConfig.set_all_configs(data)
-            DockerUtils.init()
+        if get_config("whale:refresh", "false") == "true":
             CacheProvider(app=current_app).init_port_sets()
-        session["nonce"] = generate_nonce()
-        configs = DBConfig.get_all_configs()
-        return render_template('whale_config.html', configs=configs)
+            set_config("whale:refresh", "false")
+        return render_template('whale_config.html')
 
     @page_blueprint.route("/admin/containers")
     @admins_only
@@ -92,7 +89,6 @@ def load(app):
             for r in results:
                 ControlUtil.try_remove_container(r.user_id)
 
-            configs = DBConfig.get_all_configs()
             containers = DBContainer.get_all_alive_container()
 
             config = ''.join([c.frp_config for c in containers])
@@ -100,11 +96,11 @@ def load(app):
             try:
                 # you can authorize a connection by setting
                 # frp_url = http://user:pass@ip:port
-                frp_addr = configs.get("frp_api_url")
+                frp_addr = get_config("whale:frp_api_url")
                 if not frp_addr:
-                    frp_addr = f'http://{configs.get("frp_api_ip", "frpc")}:{configs.get("frp_api_port", "7400")}'
+                    frp_addr = f'http://{get_config("whale:frp_api_ip", "frpc")}:{get_config("whale:frp_api_port", "7400")}'
                     # backward compatibility
-                common = configs.get("frp_config_template")
+                common = get_config("whale:frp_config_template")
                 if '[common]' in common:
                     output = common + config
                 else:

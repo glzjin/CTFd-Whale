@@ -2,8 +2,9 @@ import datetime
 import traceback
 from flask import current_app
 
+from CTFd.utils import get_config
 from .cache import CacheProvider
-from .db import DBContainer, DBConfig, db
+from .db import DBContainer, db
 from .docker import DockerUtils
 
 
@@ -39,7 +40,7 @@ class ControlUtil:
         container = DBContainer.get_current_containers(user_id)
         if not container:
             return False, 'No such container'
-        timeout = int(DBConfig.get_config("docker_timeout", "3600"))
+        timeout = int(get_config("whale:docker_timeout", "3600"))
         container.start_time = container.start_time + \
                                datetime.timedelta(seconds=timeout)
         if container.start_time > datetime.datetime.now():

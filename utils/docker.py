@@ -1,12 +1,14 @@
-import docker
 import json
 import random
 import uuid
 from collections import OrderedDict
+
+import docker
 from flask import current_app
 
+from CTFd.utils import get_config
+
 from .cache import CacheProvider
-from .db import DBConfig
 from .exceptions import WhaleError
 
 
@@ -14,42 +16,41 @@ class DockerUtils:
     @staticmethod
     def init():
         try:
-            DockerUtils.client = docker.DockerClient(base_url=DBConfig.get_config("docker_api_url"))
+            DockerUtils.client = docker.DockerClient(base_url=get_config("whale:docker_api_url"))
             # docker-py is thread safe: https://github.com/docker/docker-py/issues/619
-        except Exception as e:
+        except Exception:
             raise WhaleError(
-                'Docker Connection Error' +
-                'Please ensure the docker api url (first config item) is correct' +
+                'Docker Connection Error\n'
+                'Please ensure the docker api url (first config item) is correct\n'
                 'if you are using unix:///var/run/docker.sock, check if the socket is correctly mapped'
             )
-        credentials = DBConfig.get_config("docker_credentials")
+        credentials = get_config("whale:docker_credentials")
         if credentials and credentials.count(':') == 1:
             try:
                 DockerUtils.client.login(*credentials.split(':'))
-            except:
+            except Exception:
                 raise WhaleError('docker.io failed to login, check your credentials')
 
     @staticmethod
     def add_container(container):
-        configs = DBConfig.get_all_configs()
         if container.challenge.docker_image.startswith("{"):
-            DockerUtils._create_grouped_container(DockerUtils.client, container, configs)
+            DockerUtils._create_grouped_container(DockerUtils.client, container)
         else:
-            DockerUtils._create_standalone_container(DockerUtils.client, container, configs)
+            DockerUtils._create_standalone_container(DockerUtils.client, container)
 
     @staticmethod
-    def _create_standalone_container(client, container, configs):
-        dns = configs.get("docker_dns", "").split(",")
+    def _create_standalone_container(client, container):
+        dns = get_config("whale:docker_dns", "").split(",")
         node = DockerUtils.choose_node(
             container.challenge.docker_image,
-            configs.get("docker_swarm_nodes", "").split(",")
+            get_config("whale:docker_swarm_nodes", "").split(",")
         )
 
         client.services.create(
             image=container.challenge.docker_image,
             name=f'{container.user_id}-{container.uuid}',
             env={'FLAG': container.flag}, dns_config=docker.types.DNSConfig(nameservers=dns),
-            networks=[configs.get("docker_auto_connect_network", "ctfd_frp-containers")],
+            networks=[get_config("whale:docker_auto_connect_network", "ctfd_frp-containers")],
             resources=docker.types.Resources(
                 mem_limit=DockerUtils.convert_readable_text(
                     container.challenge.memory_limit),
@@ -63,7 +64,7 @@ class DockerUtils:
         )
 
     @staticmethod
-    def _create_grouped_container(client, container, configs):
+    def _create_grouped_container(client, container):
         range_prefix = CacheProvider(app=current_app).get_available_network_range()
 
         ipam_pool = docker.types.IPAMPool(subnet=range_prefix)
@@ -78,7 +79,7 @@ class DockerUtils:
         )
 
         dns = []
-        containers = configs.get("docker_auto_connect_containers", "").split(",")
+        containers = get_config("whale:docker_auto_connect_containers", "").split(",")
         for c in containers:
             if not c:
                 continue
@@ -105,7 +106,7 @@ class DockerUtils:
                 container_name = f'{container.user_id}-{container.uuid}'
             else:
                 container_name = f'{container.user_id}-{uuid.uuid4()}'
-                node = DockerUtils.choose_node(image, configs.get("docker_swarm_nodes", "").split(","))
+                node = DockerUtils.choose_node(image, get_config("whale:docker_swarm_nodes", "").split(","))
                 has_processed_main = True
             client.services.create(
                 image=image, name=container_name, networks=[
@@ -127,8 +128,6 @@ class DockerUtils:
 
     @staticmethod
     def remove_container(container):
-        configs = DBConfig.get_all_configs()
-
         whale_id = f'{container.user_id}-{container.uuid}'
 
         for s in DockerUtils.client.services.list(filters={'label': f'whale_id={whale_id}'}):
@@ -136,13 +135,13 @@ class DockerUtils:
 
         networks = DockerUtils.client.networks.list(names=[whale_id])
         if len(networks) > 0:  # is grouped containers
-            auto_containers = configs.get("docker_auto_connect_containers", "").split(",")
+            auto_containers = get_config("whale:docker_auto_connect_containers", "").split(",")
             redis_util = CacheProvider(app=current_app)
             for network in networks:
                 for container in auto_containers:
                     try:
                         network.disconnect(container, force=True)
-                    except:
+                    except Exception:
                         pass
                 redis_util.add_available_network_range(network.attrs['Labels']['prefix'])
                 network.remove()
@@ -178,8 +177,8 @@ class DockerUtils:
             return random.choice(linux_nodes)
         except IndexError:
             raise WhaleError(
-                'No Suitable Nodes.\n' +
-                'If you are using Whale for the first time, \n' +
-                'Please Setup Swarm Nodes Correctly and Lable Them with\n' +
+                'No Suitable Nodes.\n'
+                'If you are using Whale for the first time, \n'
+                'Please Setup Swarm Nodes Correctly and Lable Them with\n'
                 'docker node update --label-add "name=linux-1" $(docker node ls -q)'
             )

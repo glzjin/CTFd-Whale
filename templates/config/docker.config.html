@@ -8,6 +8,7 @@
         "Credentials": ("docker_credentials", "docker.io username and password, separated by ':'. useful for private images"),
         "Swarm Nodes": ("docker_swarm_nodes", "Will pick up one from it, You should set your node with label name=windows-* or name=linux-*. Separated by commas."),
     }.items() %}
+        {% set value = get_config('whale:' + val[0]) %}
         <div class="form-group">
             <label for="{{ val[0].replace('_', '-') }}">
                 {{ config }}
@@ -17,7 +18,7 @@
             </label>
             <input type="text" class="form-control"
                    id="{{ val[0].replace('_', '-') }}" name="{{ val[0] }}"
-                   value="{{ configs.get(val[0]) }}">
+                   {% if value != None %}value="{{ value }}"{% endif %}>
         </div>
     {% endfor %}
     <hr>
@@ -29,6 +30,7 @@
         "Auto Connect Network": ("docker_auto_connect_network", "The network connected for single-containers. It's usually the same network as the frpc is in."),
         "Dns Setting": ("docker_dns", "Decide which dns will be used in container network."),
     }.items() %}
+        {% set value = get_config('whale:' + val[0]) %}
         <div class="form-group">
             <label for="{{ val[0].replace('_', '-') }}">
                 {{ config }}
@@ -38,7 +40,7 @@
             </label>
             <input type="text" class="form-control"
                    id="{{ val[0].replace('_', '-') }}" name="{{ val[0] }}"
-                   value="{{ configs.get(val[0]) }}">
+                   {% if value != None %}value="{{ value }}"{% endif %}>
         </div>
     {% endfor %}
     <hr>
@@ -51,6 +53,7 @@
         "Multi-Container Network Subnet": ("docker_subnet", "Subnet which will be used by auto created networks for multi-container challenges."),
         "Multi-Container Network Subnet New Prefix": ("docker_subnet_new_prefix", "Prefix for auto created network.")
     }.items() %}
+        {% set value = get_config('whale:' + val[0]) %}
         <div class="form-group">
             <label for="{{ val[0].replace('_', '-') }}">
                 {{ config }}
@@ -60,7 +63,7 @@
             </label>
             <input type="text" class="form-control"
                    id="{{ val[0].replace('_', '-') }}" name="{{ val[0] }}"
-                   value="{{ configs.get(val[0]) }}">
+                   {% if value != None %}value="{{ value }}"{% endif %}>
         </div>
     {% endfor %}
 

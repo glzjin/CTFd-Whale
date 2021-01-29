@@ -1,9 +1,10 @@
-from .db import DBConfig
+from CTFd.utils import set_config
+
 from ..models import WhaleRedirectTemplate, db
 
 
 def setup_default_configs():
-    DBConfig.set_all_configs({
+    for key, val in {
         'setup': 'true',
         'docker_api_url': 'unix:///var/run/docker.sock',
         'docker_credentials': '',
@@ -15,14 +16,19 @@ def setup_default_configs():
         'docker_swarm_nodes': 'linux-1',
         'docker_timeout': '3600',
         'frp_api_url': 'http://frpc:7400',
+        'frp_http_port': '8080',
+        'frp_http_domain_suffix': '127.0.0.1.xip.io',
         'frp_direct_port_maximum': '10100',
         'frp_direct_port_minimum': '10000',
         'template_http_subdomain': '{{ container.uuid }}',
         'template_chall_flag': '{{ "flag{"+uuid.uuid4()|string+"}" }}',
-    })
+    }.items():
+        set_config('whale:' + key, val)
     db.session.add(WhaleRedirectTemplate(
         'http',
-        'http://{{ container.http_subdomain }}.{{ configs.get("frp_http_domain_suffix", "") }}{% if configs.get("frp_http_port", "80") != 80 %}:{{ configs.get("frp_http_port") }}{% endif %}/',
+        'http://{{ container.http_subdomain }}.'
+        '{{ get_config("whale:frp_http_domain_suffix", "") }}'
+        '{% if get_config("whale:frp_http_port", "80") != 80 %}:{{ get_config("whale:frp_http_port") }}{% endif %}/',
         '''
 [http_{{ container.user_id|string }}-{{ container.uuid }}]
 type = http
@@ -34,7 +40,7 @@ use_compression = true
     ))
     db.session.add(WhaleRedirectTemplate(
         'direct',
-        'nc {{ configs.get("frp_direct_ip_address", "127.0.0.1") }} {{ container.port }}',
+        'nc {{ get_config("whale:frp_direct_ip_address", "127.0.0.1") }} {{ container.port }}',
         '''
 [direct_{{ container.user_id|string }}-{{ container.uuid }}]
 type = tcp

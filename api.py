@@ -4,10 +4,11 @@ from flask_restx import Namespace, Resource
 from werkzeug.exceptions import Forbidden, NotFound
 
 from CTFd.utils import user as current_user
+from CTFd.utils import get_config, set_config
 from CTFd.utils.decorators import admins_only, authed_only
 from .decorators import challenge_visible, frequency_limited
 from .utils.control import ControlUtil
-from .utils.db import DBContainer, DBConfig
+from .utils.db import DBContainer
 
 admin_namespace = Namespace("ctfd-whale-admin")
 user_namespace = Namespace("ctfd-whale-user")
@@ -96,7 +97,7 @@ class UserContainers(Resource):
         container = DBContainer.get_current_containers(user_id=user_id)
         if not container:
             return {'success': True, 'data': {}}
-        timeout = int(DBConfig.get_config("docker_timeout", "3600"))
+        timeout = int(get_config("whale:docker_timeout", "3600"))
         if int(container.challenge_id) != int(challenge_id):
             return {
                 'success': False,
@@ -120,7 +121,7 @@ class UserContainers(Resource):
         ControlUtil.try_remove_container(user_id)
 
         current_count = DBContainer.get_all_alive_container_count()
-        if int(DBConfig.get_config("docker_max_container_count")) <= int(current_count):
+        if int(get_config("whale:docker_max_container_count")) <= int(current_count):
             abort(403, 'Max container count exceed.')
 
         challenge_id = request.args.get('challenge_id')
@@ -138,7 +139,7 @@ class UserContainers(Resource):
     @frequency_limited
     def patch():
         user_id = current_user.get_current_user().id
-        docker_max_renew_count = int(DBConfig.get_config("docker_max_renew_count", 5))
+        docker_max_renew_count = int(get_config("whale:docker_max_renew_count", 5))
         container = DBContainer.get_current_containers(user_id)
         if container is None:
             abort(403, 'Instance not found.')

@@ -1,13 +1,12 @@
 import docker
 import ipaddress
-import threading
 import warnings
-from flask_caching import Cache
+from CTFd.cache import cache
+from CTFd.utils import get_config
 from flask_redis import FlaskRedis
 from redis.exceptions import LockError
 
-from CTFd.cache import cache
-from .db import DBContainer, DBConfig
+from .db import DBContainer
 
 
 class CacheProvider:
@@ -22,25 +21,21 @@ class CacheProvider:
     def init_port_sets(self):
         self.clear()
 
-        configs = DBConfig.get_all_configs()
         containers = DBContainer.get_all_container()
         used_port_list = []
         for container in containers:
             if container.port != 0:
                 used_port_list.append(container.port)
-        for port in range(int(configs.get("frp_direct_port_minimum", 29000)),
-                          int(configs.get("frp_direct_port_maximum", 28000)) + 1):
+        for port in range(int(get_config("whale:frp_direct_port_minimum", 29000)),
+                          int(get_config("whale:frp_direct_port_maximum", 28000)) + 1):
             if port not in used_port_list:
                 self.add_available_port(port)
 
-        client = docker.DockerClient(base_url=configs.get("docker_api_url"))
-        docker_subnet = configs.get("docker_subnet", "174.1.0.0/16")
-        try:
-            docker_subnet = unicode(docker_subnet)
-        except:
-            pass
+        client = docker.DockerClient(base_url=get_config("whale:docker_api_url"))
+
+        docker_subnet = get_config("whale:docker_subnet", "174.1.0.0/16")
         docker_subnet_new_prefix = int(
-            configs.get("docker_subnet_new_prefix", "24"))
+            get_config("whale:docker_subnet_new_prefix", "24"))
 
         exist_networks = []
         available_networks = []

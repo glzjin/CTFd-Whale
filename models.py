@@ -1,8 +1,10 @@
 import random
 import uuid
 from datetime import datetime
+
 from jinja2 import Template
 
+from CTFd.utils import get_config
 from CTFd.models import db, Challenges
 
 
@@ -34,7 +36,8 @@ class WhaleRedirectTemplate(db.Model):
 
 class DynamicDockerChallenge(Challenges):
     __mapper_args__ = {"polymorphic_identity": "dynamic_docker"}
-    id = db.Column(None, db.ForeignKey("challenges.id", ondelete="CASCADE"), primary_key=True)
+    id = db.Column(None, db.ForeignKey("challenges.id",
+                                       ondelete="CASCADE"), primary_key=True)
 
     initial = db.Column(db.Integer, default=0)
     minimum = db.Column(db.Integer, default=0)
@@ -73,21 +76,19 @@ class WhaleContainer(db.Model):
 
     @property
     def http_subdomain(self):
-        from .utils.db import DBConfig
-        return Template(DBConfig.get_config(
-            'template_http_subdomain', '{{ container.uuid }}'
+        return Template(get_config(
+            'whale:template_http_subdomain', '{{ container.uuid }}'
         )).render(container=self)
 
     def __init__(self, user_id, challenge_id, port):
-        from .utils.db import DBConfig
         self.user_id = user_id
         self.challenge_id = challenge_id
         self.start_time = datetime.now()
         self.renew_count = 0
         self.uuid = str(uuid.uuid4())
         self.port = port
-        self.flag = Template(DBConfig.get_config(
-            'template_chall_flag', '{{ "flag{"+uuid.uuid4()|string+"}" }}'
+        self.flag = Template(get_config(
+            'whale:template_chall_flag', '{{ "flag{"+uuid.uuid4()|string+"}" }}'
         )).render(container=self, uuid=uuid, random=random)
 
     @property

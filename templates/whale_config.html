@@ -20,7 +20,7 @@
 
 {% block panel %}
     <div role="tabpanel" class="tab-pane config-section active" id="settings">
-        <form method="POST" accept-charset="utf-8"
+        <form method="POST" accept-charset="utf-8" action="/admin/plugins/ctfd-whale"
               class="form-horizontal">
             <div class="tab-content">
                 {% include "config/docker.config.html" %}
@@ -29,6 +29,11 @@
                 {% include "config/challenges.config.html" %}
             </div>
             <input hidden name="nonce" value="{{ Session.nonce }}"/>
+            <input hidden name="whale:refresh" value="true"/>
         </form>
     </div>
+{% endblock %}
+
+{% block entrypoint %}
+	<script defer src="{{ url_for('views.themes', theme='admin', path='js/pages/configs.js') }}"></script>
 {% endblock %}
