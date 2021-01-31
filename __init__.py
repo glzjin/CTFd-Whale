@@ -100,19 +100,19 @@ def load(app):
                 if not frp_addr:
                     frp_addr = f'http://{get_config("whale:frp_api_ip", "frpc")}:{get_config("whale:frp_api_port", "7400")}'
                     # backward compatibility
-                common = get_config("whale:frp_config_template")
+                common = get_config("whale:frp_config_template", '')
                 if '[common]' in common:
                     output = common + config
                 else:
-                    remote = requests.get(f'{frp_addr.lstrip("/")}/api/config')
+                    remote = requests.get(f'{frp_addr.rstrip("/")}/api/config')
                     assert remote.status_code == 200
-                    configs["frp_config_template"] = remote.text
+                    set_config("whale:frp_config_template", remote.text)
                     output = remote.text + config
                 assert requests.put(
-                    f'{frp_addr.lstrip("/")}/api/config', output, timeout=5
+                    f'{frp_addr.rstrip("/")}/api/config', output, timeout=5
                 ).status_code == 200
                 assert requests.get(
-                    f'{frp_addr.lstrip("/")}/api/reload', timeout=5
+                    f'{frp_addr.rstrip("/")}/api/reload', timeout=5
                 ).status_code == 200
             except (requests.RequestException, AssertionError):
                 raise WhaleError(
