@@ -89,25 +89,19 @@ class WhaleContainer(db.Model):
         self.port = port
         self.flag = Template(get_config(
             'whale:template_chall_flag', '{{ "flag{"+uuid.uuid4()|string+"}" }}'
-        )).render(container=self, uuid=uuid, random=random)
+        )).render(container=self, uuid=uuid, random=random, get_config=get_config)
 
     @property
     def user_access(self):
-        configs = {}
-        for c in WhaleConfig.query.all():
-            configs[str(c.key)] = str(c.value)
         return Template(WhaleRedirectTemplate.query.filter_by(
             key=self.challenge.redirect_type
-        ).first().access_template).render(container=self, configs=configs)
+        ).first().access_template).render(container=self, get_config=get_config)
 
     @property
     def frp_config(self):
-        configs = {}
-        for c in WhaleConfig.query.all():
-            configs[str(c.key)] = str(c.value)
         return Template(WhaleRedirectTemplate.query.filter_by(
             key=self.challenge.redirect_type
-        ).first().frp_template).render(container=self, configs=configs)
+        ).first().frp_template).render(container=self, get_config=get_config)
 
     def __repr__(self):
         return "<WhaleContainer ID:{0} {1} {2} {3} {4}>".format(self.id, self.user_id, self.challenge_id,
