@@ -34,6 +34,6 @@
     </div>
 {% endblock %}
 
-{% block entrypoint %}
-	<script defer src="{{ url_for('views.themes', theme='admin', path='js/pages/configs.js') }}"></script>
+{% block scripts %}
+    <script defer src="{{ url_for('plugins.ctfd-whale.assets', path='config.js') }}"></script>
 {% endblock %}

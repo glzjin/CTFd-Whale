@@ -38,6 +38,10 @@ def load(app):
         app, base_path=f"/plugins/{plugin_name}/assets",
         endpoint='plugins.ctfd-whale.assets'
     )
+    register_admin_plugin_menu_bar(
+        title='Whale',
+        route='/plugins/ctfd-whale/admin/settings'
+    )
 
     DynamicValueDockerChallenge.templates = {
         "create": f"/plugins/{plugin_name}/assets/create.html",
@@ -65,7 +69,7 @@ def load(app):
     @page_blueprint.route('/admin/settings')
     @admins_only
     def admin_list_configs():
-        if get_config("whale:refresh", "false") == "true":
+        if get_config("whale:refresh", "false"):
             CacheProvider(app=current_app).init_port_sets()
             set_config("whale:refresh", "false")
         return render_template('whale_config.html')
