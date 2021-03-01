@@ -1,6 +1,7 @@
 import functools
 import time
-from flask import request, current_app, abort, session
+from flask import request, current_app, session
+from flask_restx import abort
 from sqlalchemy.sql import and_
 
 from CTFd.models import Challenges
@@ -33,13 +34,13 @@ def frequency_limited(func):
             return func(*args, **kwargs)
         redis_util = CacheProvider(app=current_app, user_id=get_current_user().id)
         if not redis_util.acquire_lock():
-            abort(403, 'Request Too Fast!')
+            abort(403, 'Request Too Fast!', success=False)
 
         if "limit" not in session:
             session["limit"] = int(time.time())
         else:
             if int(time.time()) - session["limit"] < 60:
-                abort(403, 'Frequency limit, You should wait at least 1 min.')
+                abort(403, 'Frequency limit, You should wait at least 1 min.', success=False)
         session["limit"] = int(time.time())
 
         result = func(*args, **kwargs)
