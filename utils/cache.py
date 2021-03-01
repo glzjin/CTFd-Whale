@@ -13,10 +13,11 @@ class CacheProvider:
     def __init__(self, app, *args, **kwargs):
         if app.config['CACHE_TYPE'] == 'redis':
             self.provider = RedisCacheProvider(app, *args, **kwargs)
-        elif app.config['CACHE_TYPE'] == 'filesystem':
+        elif app.config['CACHE_TYPE'] in ['filesystem', 'simple']:
             if not hasattr(CacheProvider, 'cache'):
                 CacheProvider.cache = {}
             self.provider = FilesystemCacheProvider(app, *args, **kwargs)
+            self.init_port_sets()
 
     def init_port_sets(self):
         self.clear()
