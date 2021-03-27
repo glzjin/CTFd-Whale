@@ -16,7 +16,7 @@ from .api import *
 from .challenge_type import DynamicValueDockerChallenge
 from .utils.cache import CacheProvider
 from .utils.control import ControlUtil
-from .utils.db import DBContainer, DBConfig
+from .utils.db import DBContainer
 from .utils.docker import DockerUtils
 from .utils.exceptions import WhaleError
 from .utils.setup import setup_default_configs
@@ -28,11 +28,7 @@ def load(app):
     set_config('whale:plugin_name', plugin_name)
     app.db.create_all()
     if not get_config("whale:setup"):
-        if not DBConfig.get_config('setup'):
-            setup_default_configs()
-        else:
-            for key, val in DBConfig.get_all_configs().items():
-                set_config('whale:' + key, val)
+        setup_default_configs()
 
     register_plugin_assets_directory(
         app, base_path=f"/plugins/{plugin_name}/assets",
