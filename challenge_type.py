@@ -98,7 +98,6 @@ class DynamicValueDockerChallenge(BaseChallenge):
             DynamicValueChallenge.calculate_value(challenge)
 
         db.session.commit()
-        db.session.close()
 
     @classmethod
     def delete(cls, challenge):
