@@ -1,7 +1,8 @@
 import fcntl
+import warnings
 
 import requests
-from flask import Blueprint, render_template, session, current_app
+from flask import Blueprint, render_template, session, current_app, request
 from flask_apscheduler import APScheduler
 
 from CTFd.api import CTFd_API_v1
@@ -10,15 +11,17 @@ from CTFd.plugins import (
     register_admin_plugin_menu_bar,
 )
 from CTFd.plugins.challenges import CHALLENGE_CLASSES
-from CTFd.utils.security.csrf import generate_nonce
 from CTFd.utils import get_config, set_config
-from .api import *
+from CTFd.utils.decorators import admins_only
+
+from .api import user_namespace, admin_namespace, AdminContainers
 from .challenge_type import DynamicValueDockerChallenge
 from .utils.cache import CacheProvider
+from .utils.checks import WhaleChecks
 from .utils.control import ControlUtil
 from .utils.db import DBContainer
 from .utils.docker import DockerUtils
-from .utils.exceptions import WhaleError
+from .utils.exceptions import WhaleError, WhaleWarning
 from .utils.setup import setup_default_configs
 
 
@@ -60,15 +63,16 @@ def load(app):
     )
     CTFd_API_v1.add_namespace(admin_namespace, path="/plugins/ctfd-whale/admin")
     CTFd_API_v1.add_namespace(user_namespace, path="/plugins/ctfd-whale")
-    DockerUtils.init()
 
     @page_blueprint.route('/admin/settings')
     @admins_only
     def admin_list_configs():
-        if get_config("whale:refresh", "false"):
+        errors = WhaleChecks.perform()
+        if not errors and get_config("whale:refresh", "false"):
+            DockerUtils.init()
             CacheProvider(app=current_app).init_port_sets()
             set_config("whale:refresh", "false")
-        return render_template('whale_config.html')
+        return render_template('whale_config.html', errors=errors)
 
     @page_blueprint.route("/admin/containers")
     @admins_only
@@ -114,13 +118,20 @@ def load(app):
                 assert requests.get(
                     f'{frp_addr.rstrip("/")}/api/reload', timeout=5
                 ).status_code == 200
-            except (requests.RequestException, AssertionError):
+            except (requests.RequestException, AssertionError) as e:
                 raise WhaleError(
-                    'frpc request failed\n' +
+                    '\nfrpc request failed\n' +
+                    (f'{e}\n' if str(e) else '') +
                     'please check the frp related configs'
-                )
+                ) from None
 
     app.register_blueprint(page_blueprint)
+
+    try:
+        CacheProvider(app=app).init_port_sets()
+        DockerUtils.init()
+    except Exception:
+        warnings.warn("Initialization Failed. Please check your configs.", WhaleWarning)
 
     try:
         lock_file = open("/tmp/ctfd_whale.lock", "w")
@@ -134,9 +145,6 @@ def load(app):
             id='whale-auto-clean', func=auto_clean_container,
             trigger="interval", seconds=10
         )
-
-        redis_util = CacheProvider(app=app)
-        redis_util.init_port_sets()
 
         print("[CTFd Whale] Started successfully")
     except IOError:

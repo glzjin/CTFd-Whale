@@ -19,6 +19,7 @@
 {% endblock %}
 
 {% block panel %}
+    {% include "components/errors.html" %}
     <div role="tabpanel" class="tab-pane config-section active" id="settings">
         <form method="POST" accept-charset="utf-8" action="/admin/plugins/ctfd-whale"
               class="form-horizontal">
