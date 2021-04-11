@@ -50,7 +50,7 @@
     {%- if 'server_port' in i -%}{{ i.replace('server_port', 'bind_port') }}{%- endif -%}
 {% endfor %}
 vhost_http_port = {{ get_config('whale:frp_http_port') }}
-subdomain_host = {{ get_config('whale:frp_http_domain_suffix').lstrip('.') }}
+subdomain_host = {{ get_config('whale:frp_http_domain_suffix', '127.0.0.1.xip.io').lstrip('.') }}
 </textarea>
     </div>
     {% endif %}
