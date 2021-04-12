@@ -14,14 +14,16 @@ def challenge_visible(func):
     def _challenge_visible(*args, **kwargs):
         challenge_id = request.args.get('challenge_id')
         if is_admin():
-            Challenges.query.filter(
+            if not Challenges.query.filter(
                 Challenges.id == challenge_id
-            ).first_or_404('no such challenge')
+            ).first():
+                abort(404, 'no such challenge', success=False)
         else:
-            Challenges.query.filter(
+            if not Challenges.query.filter(
                 Challenges.id == challenge_id,
                 and_(Challenges.state != "hidden", Challenges.state != "locked"),
-            ).first_or_404('challenge not visible')
+            ).first():
+                abort(403, 'challenge not visible', success=False)
         return func(*args, **kwargs)
 
     return _challenge_visible
@@ -35,6 +37,7 @@ def frequency_limited(func):
         redis_util = CacheProvider(app=current_app, user_id=get_current_user().id)
         if not redis_util.acquire_lock():
             abort(403, 'Request Too Fast!', success=False)
+            # last request was unsuccessful. this is for protection.
 
         if "limit" not in session:
             session["limit"] = int(time.time())

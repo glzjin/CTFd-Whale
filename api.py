@@ -14,24 +14,13 @@ admin_namespace = Namespace("ctfd-whale-admin")
 user_namespace = Namespace("ctfd-whale-user")
 
 
-@admin_namespace.errorhandler(NotFound)
-@user_namespace.errorhandler(NotFound)
-def handle_notfound(err):
-    data = {
-        'success': False,
-        'message': err.description
-    }
-    return data, 404
-
-
 @admin_namespace.errorhandler
 @user_namespace.errorhandler
 def handle_default(err):
-    data = {
+    return {
         'success': False,
         'message': 'Unexpected things happened'
-    }
-    return data, 500
+    }, 500
 
 
 @admin_namespace.route('/container')
