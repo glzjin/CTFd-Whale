@@ -103,9 +103,9 @@ class DockerUtils:
             )
         for name, image in images.items():
             if has_processed_main:
-                container_name = f'{container.user_id}-{container.uuid}'
-            else:
                 container_name = f'{container.user_id}-{uuid.uuid4()}'
+            else:
+                container_name = f'{container.user_id}-{container.uuid}'
                 node = DockerUtils.choose_node(image, get_config("whale:docker_swarm_nodes", "").split(","))
                 has_processed_main = True
             client.services.create(
