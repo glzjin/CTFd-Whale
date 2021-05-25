@@ -1,14 +1,17 @@
-from docker import DockerClient
-from docker.errors import DockerException, APIError, requests
+from docker.errors import DockerException, TLSParameterError, APIError, requests
 
 from CTFd.utils import get_config
+
+from .docker import get_docker_client
 
 
 class WhaleChecks:
     @staticmethod
     def check_docker_api():
         try:
-            client = DockerClient(base_url=get_config("whale:docker_api_url"))
+            client = get_docker_client()
+        except TLSParameterError as e:
+            return f'Docker TLS Parameters incorrect ({e})'
         except DockerException as e:
             return f'Docker API url incorrect ({e})'
         try:

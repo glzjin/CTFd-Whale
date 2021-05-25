@@ -1,4 +1,3 @@
-import docker
 import ipaddress
 import warnings
 from CTFd.cache import cache
@@ -32,7 +31,8 @@ class CacheProvider:
             if port not in used_port_list:
                 self.add_available_port(port)
 
-        client = docker.DockerClient(base_url=get_config("whale:docker_api_url"))
+        from .docker import get_docker_client
+        client = get_docker_client()
 
         docker_subnet = get_config("whale:docker_subnet", "174.1.0.0/16")
         docker_subnet_new_prefix = int(
