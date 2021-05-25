@@ -1,6 +1,34 @@
 # 使用指南
 
-## 安装
+## TLDR
+
+如果你从未部署过CTFd，你可以通过执行:
+
+```sh
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh --mirror Aliyun
+docker swarm init
+docker node update --label-add='name=linux-1' $(docker node ls -q)
+
+git clone https://github.com/CTFd/CTFd --depth=1
+git clone https://github.com/frankli0324/ctfd-whale CTFd/CTFd/plugins/ctfd-whale --depth=1
+curl -fsSL https://cdn.jsdelivr.net/gh/frankli0324/ctfd-whale/docker-compose.example.yml -o CTFd/docker-compose.yml
+
+# make sure you have pip3 installed on your rig
+pip3 install docker-compose
+docker-compose -f CTFd/docker-compose.yml up -d
+docker-compose -f CTFd/docker-compose.yml exec ctfd python manage.py
+```
+
+脚本会在一台Linux机器上安装 ***docker.com版本的*** `docker-ce`，`python3-pip` 以及 `docker-compose`，请确保执行上述代码之前：
+
+* 安装好curl，git，python3以及pip
+* 网络环境良好，能正常从GitHub克隆仓库
+* 网络环境良好，能正常从Docker Registry拖取镜像
+
+## 手动安装
+
+为了更好地理解ctfd-whale各个组件的作用，更充分地利用ctfd-whale，在真实使用ctfd-whale时建议用户手动、完整地从空白CTFd开始搭建一个实例。下面本文将引导你完成整个流程。
 
 ### 从零开始
 
@@ -13,7 +41,9 @@ docker swarm init
 docker node update --label-add "name=linux-1" $(docker node ls -q)
 ```
 
-然后先确保CTFd可以正常运行。
+`ctfd-whale`利用`docker swarm`的集群管理能力，能够将题目容器分发到不同的节点上运行。选手每次请求启动题目容器时，`ctfd-whale`都将随机选择一个合适的节点运行这个题目容器。
+
+然后，我们需要确保CTFd可以正常运行。
 
 注意，2.5.0+版本CTFd的 `docker-compose.yml` 中包含了一个 `nginx` 反代，占用了80端口
 
@@ -195,12 +225,12 @@ docker network ls -f "label=com.docker.compose.project=ctfd" --format "{{.Name}}
 
 然后检查frp配置项是否正确
 
-- `HTTP Domain Suffix` 与 frps 的 `subdomain_host` 保持一致
-- `HTTP Port` 与 frps 的 `vhost_http_port` 保持一致
-- `Direct IP Address` 为能访问到 frps 相应端口(例子中为10000-10100) 的IP
-- `Direct Minimum Port` 与 `Direct Maximum Port` 显然可得
-- 只要正确填写了 `API URL` ，Whale 会自动获取 frpc 的配置文件作为 `Frpc config template`
-- 通过设置 `Frpc config template` 可以覆盖原有 `frpc.ini` 文件
+* `HTTP Domain Suffix` 与 frps 的 `subdomain_host` 保持一致
+* `HTTP Port` 与 frps 的 `vhost_http_port` 保持一致
+* `Direct IP Address` 为能访问到 frps 相应端口(例子中为10000-10100) 的IP
+* `Direct Minimum Port` 与 `Direct Maximum Port` 显然可得
+* 只要正确填写了 `API URL` ，Whale 会自动获取 frpc 的配置文件作为 `Frpc config template`
+* 通过设置 `Frpc config template` 可以覆盖原有 `frpc.ini` 文件
 
 至此，CTFd-Whale 已经马马虎虎可以正常使用了。
 
@@ -211,8 +241,8 @@ docker network ls -f "label=com.docker.compose.project=ctfd" --format "{{.Name}}
 首先去除docker-compose.yml中对frps http端口的映射(8001)
 如果想贯彻到底的话，可以
 
-- 为nginx添加internal与default两个network
-- 去除CTFd的default network，并去除ports项
+* 为nginx添加internal与default两个network
+* 去除CTFd的default network，并去除ports项
 
 在 `./conf/nginx/nginx.conf` 的http block中添加以下server block
 
@@ -272,6 +302,6 @@ ENV METHOD=aes-256-cfb
 
 ## 安全事项
 
-- 后台配置中flag与domain模版理论上存在ssti（feature），请不要将管理员账号给不可信第三方
-- 由于例子中frpc并没有开启鉴权，请不要将frpc的bind_addr设置为`0.0.0.0`。这样会导致利用任何一道能发起http请求的题目都能修改frpc配置。
-- 如果出于配置复杂性考虑，题目容器能够访问frpc，请开启frpc的Basic Auth，并以 `http://username:password@frpc:7400` 的格式设置frpc API URL
+* 后台配置中flag与domain模版理论上存在ssti（feature），请不要将管理员账号给不可信第三方
+* 由于例子中frpc并没有开启鉴权，请不要将frpc的bind_addr设置为`0.0.0.0`。这样会导致利用任何一道能发起http请求的题目都能修改frpc配置。
+* 如果出于配置复杂性考虑，题目容器能够访问frpc，请开启frpc的Basic Auth，并以 `http://username:password@frpc:7400` 的格式设置frpc API URL
