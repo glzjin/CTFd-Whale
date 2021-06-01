@@ -14,7 +14,7 @@ A plugin that empowers CTFd to bring up separate environments for each user
 
 ## Installation & Usage
 
-refer to [INSTALL.md](INSTALL.md)
+refer to [installation guide](docs/install.md)
 
 ## Demo
 

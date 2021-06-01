@@ -13,7 +13,7 @@
 
 ## 使用方式
 
-请参考[INSTALL.zh-cn.md](INSTALL.zh-cn.md)
+请参考[安装指南](docs/install.zh-cn.md)
 
 ## Demo
 
