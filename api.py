@@ -74,10 +74,7 @@ class UserContainers(Resource):
             return {'success': True, 'data': {}}
         timeout = int(get_config("whale:docker_timeout", "3600"))
         if int(container.challenge_id) != int(challenge_id):
-            return {
-                'success': False,
-                'message': f'Container started but not from this challenge ({container.challenge_id})'
-            }
+            return abort(403, f'Container started but not from this challenge ({container.challenge.name})', success=False)
         return {
             'success': True,
             'data': {
@@ -114,10 +111,13 @@ class UserContainers(Resource):
     @frequency_limited
     def patch():
         user_id = current_user.get_current_user().id
+        challenge_id = request.args.get('challenge_id')
         docker_max_renew_count = int(get_config("whale:docker_max_renew_count", 5))
         container = DBContainer.get_current_containers(user_id)
         if container is None:
             abort(403, 'Instance not found.', success=False)
+        if int(container.challenge_id) != int(challenge_id):
+            abort(403, f'Container started but not from this challenge（{container.challenge.name}）', success=False)
         if container.renew_count >= docker_max_renew_count:
             abort(403, 'Max renewal count exceed.', success=False)
         result, message = ControlUtil.try_renew_container(user_id=user_id)
