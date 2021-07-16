@@ -63,7 +63,7 @@ take a look at <http://localhost>(or port 8000) and setup CTFd
 
 ### Configure frps
 
-frps could be started by docker-compose along with CTFd。
+frps could be started by docker-compose along with CTFd
 
 define a network for communication between frpc and frps, and create a frps service block
 
@@ -298,3 +298,7 @@ see how grouped containers are created in the [code](utils/docker.py#L58)
 * Please do not allow untrusted people to access the admin account. Theoretically there's an SSTI vulnerability in the config page.
 * Do not set bind_addr of the frpc to `0.0.0.0` if you are following this guide. This may enable contestants to override frpc configurations.
 * If you are annoyed by the complicated configuration, and you just want to set bind_addr = 0.0.0.0, remember to enable Basic Auth included in frpc, and set API URL accordingly, for example, `http://username:password@frpc:7400`
+
+## Advanced Deployment
+
+To separate the target server (for lunching instance) and CTFd web server with TLS secured docker API, please refer to [this document](advanced.md)

@@ -305,3 +305,9 @@ ENV METHOD=aes-256-cfb
 * 后台配置中flag与domain模版理论上存在ssti（feature），请不要将管理员账号给不可信第三方
 * 由于例子中frpc并没有开启鉴权，请不要将frpc的bind_addr设置为`0.0.0.0`。这样会导致利用任何一道能发起http请求的题目都能修改frpc配置。
 * 如果出于配置复杂性考虑，题目容器能够访问frpc，请开启frpc的Basic Auth，并以 `http://username:password@frpc:7400` 的格式设置frpc API URL
+
+## 高级部署
+
+用于下发靶机实例的服务器与运行 `CTFd` 网站的服务器分离，`CTFd-whale` 通过启用了 `TLS/SSL` 验证的 `Dockers API`进行下发容器控制
+
+参见 [advanced.zh-cn.md](advanced.zh-cn.md)
