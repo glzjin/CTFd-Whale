@@ -1,14 +1,16 @@
 from datetime import datetime
+
 from flask import request
 from flask_restx import Namespace, Resource, abort
-from werkzeug.exceptions import Forbidden, NotFound
 
+from CTFd.utils import get_config
 from CTFd.utils import user as current_user
-from CTFd.utils import get_config, set_config
 from CTFd.utils.decorators import admins_only, authed_only
+
 from .decorators import challenge_visible, frequency_limited
 from .utils.control import ControlUtil
 from .utils.db import DBContainer
+from .utils.routers import Router
 
 admin_namespace = Namespace("ctfd-whale-admin")
 user_namespace = Namespace("ctfd-whale-user")
@@ -79,7 +81,7 @@ class UserContainers(Resource):
             'success': True,
             'data': {
                 'lan_domain': str(user_id) + "-" + container.uuid,
-                'user_access': container.user_access,
+                'user_access': Router.access(container),
                 'remaining_time': timeout - (datetime.now() - container.start_time).seconds,
             }
         }

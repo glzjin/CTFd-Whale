@@ -3,6 +3,7 @@ from docker.errors import DockerException, TLSParameterError, APIError, requests
 from CTFd.utils import get_config
 
 from .docker import get_docker_client
+from .routers import Router
 
 
 class WhaleChecks:
@@ -31,13 +32,9 @@ class WhaleChecks:
 
     @staticmethod
     def check_frp_connection():
-        frp_addr = get_config("whale:frp_api_url")
-        try:
-            resp = requests.get(f'{frp_addr.rstrip("/")}/api/status')
-        except requests.RequestException as e:
-            return 'Unable to access frpc admin api'
-        if resp.status_code == 401:
-            return 'frpc admin api unauthorized'
+        ok, msg = Router.check_availability()
+        if not ok:
+            return msg
 
     @staticmethod
     def perform():

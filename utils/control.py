@@ -1,21 +1,27 @@
 import datetime
 import traceback
-from flask import current_app
 
 from CTFd.utils import get_config
-from .cache import CacheProvider
 from .db import DBContainer, db
 from .docker import DockerUtils
+from .routers import Router
 
 
 class ControlUtil:
     @staticmethod
     def try_add_container(user_id, challenge_id):
-        port = CacheProvider(app=current_app).get_available_port()
-        if not port:
-            return False, 'No available ports. Please wait for a few minutes.'
-        container = DBContainer.create_container_record(user_id, challenge_id, port)
-        DockerUtils.add_container(container)
+        container = DBContainer.create_container_record(user_id, challenge_id)
+        try:
+            DockerUtils.add_container(container)
+        except Exception as e:
+            DBContainer.remove_container_record(user_id)
+            print(traceback.format_exc())
+            return False, 'Docker Creation Error'
+        ok, msg = Router.register(container)
+        if not ok:
+            DockerUtils.remove_container(container)
+            DBContainer.remove_container_record(user_id)
+            return False, msg
         return True, 'Container created'
 
     @staticmethod
@@ -25,14 +31,14 @@ class ControlUtil:
             return False, 'No such container'
         for _ in range(3):  # configurable? as "onerror_retry_cnt"
             try:
+                ok, msg = Router.unregister(container)
+                if not ok:
+                    return False, msg
                 DockerUtils.remove_container(container)
-                if container.port != 0:
-                    redis_util = CacheProvider(app=current_app)
-                    redis_util.add_available_port(container.port)
                 DBContainer.remove_container_record(user_id)
                 return True, 'Container destroyed'
-            except:
-                traceback.print_exc()
+            except Exception as e:
+                print(traceback.format_exc())
         return False, 'Failed when destroying instance, please contact admin!'
 
     @staticmethod

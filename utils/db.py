@@ -2,14 +2,13 @@ import datetime
 
 from CTFd.models import db
 from CTFd.utils import get_config
-from ..models import WhaleConfig, WhaleContainer, WhaleRedirectTemplate
+from ..models import WhaleContainer, WhaleRedirectTemplate
 
 
 class DBContainer:
     @staticmethod
-    def create_container_record(user_id, challenge_id, port=0):
-        container = WhaleContainer(
-            user_id=user_id, challenge_id=challenge_id, port=port)
+    def create_container_record(user_id, challenge_id):
+        container = WhaleContainer(user_id=user_id, challenge_id=challenge_id)
         db.session.add(container)
         db.session.commit()
 

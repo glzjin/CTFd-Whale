@@ -5,7 +5,7 @@
         <a class="nav-link active" data-toggle="pill" href="#docker">Docker</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" data-toggle="pill" href="#frp">Frp</a>
+        <a class="nav-link" data-toggle="pill" href="#router">Router</a>
     </li>
     <li class="nav-item">
         <a class="nav-link" data-toggle="pill" href="#limits">Limits</a>
@@ -25,11 +25,10 @@
               class="form-horizontal">
             <div class="tab-content">
                 {% include "config/docker.config.html" %}
-                {% include "config/frp.config.html" %}
+                {% include "config/base.router.config.html" %}
                 {% include "config/limits.config.html" %}
                 {% include "config/challenges.config.html" %}
             </div>
-            <input hidden name="whale:refresh" value="true"/>
         </form>
     </div>
 {% endblock %}
