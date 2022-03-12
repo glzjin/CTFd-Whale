@@ -67,7 +67,7 @@ class FrpRouter(BaseRouter):
                     assert remote.status_code == 200
                     set_config("whale:frp_config_template", remote.text)
                     self.common = remote.text
-            config = self.common + '\n'.join(str(r) for r in rules)
+            config = self.common + '\n' + '\n'.join(str(r) for r in rules)
             assert self.ses.put(
                 f'{self.url}/api/config', config, timeout=5
             ).status_code == 200
