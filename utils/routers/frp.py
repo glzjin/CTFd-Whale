@@ -41,9 +41,11 @@ class FrpRouter(BaseRouter):
                 WhaleWarning
             )
 
-    def reload(self):
+    def reload(self, exclude=None):
         rules = []
         for container in DBContainer.get_all_alive_container():
+            if container.uuid == exclude:
+                continue
             name = f'{container.challenge.redirect_type}_{container.user_id}_{container.uuid}'
             config = {
                 'type': self.types[container.challenge.redirect_type],
@@ -117,7 +119,7 @@ class FrpRouter(BaseRouter):
                     challenge_id=container.challenge_id,
                 )
                 return False, 'Error deleting port from cache'
-        self.reload()
+        self.reload(exclude=container.uuid)
         return True, 'success'
 
     def check_availability(self):
