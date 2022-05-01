@@ -1,7 +1,7 @@
 {% for config, val in {
     "API URL": ("frp_api_url", "Frp API to connect to"),
     "Http Domain Suffix": ("frp_http_domain_suffix", "Will be appended to the hash of a container"),
-    "Http Port": ("frp_http_port", "For http redirect"),
+    "External Http Port": ("frp_http_port", "Keep in sync with frps:vhost_http_port"),
     "Direct IP Address":("frp_direct_ip_address","For direct redirect"),
     "Direct Minimum Port": ("frp_direct_port_minimum", "For direct redirect (pwn challenges)"),
     "Direct Maximum Port": ("frp_direct_port_maximum", "For direct redirect (pwn challenges)"),
