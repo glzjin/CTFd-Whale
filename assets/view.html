@@ -3,19 +3,6 @@
 {% block description %}
     {{ challenge.html }}
     <div class="row text-center pb-3">
-        <div id="whale-panel" style="width: 100%;">
-            <button type="button" class="btn btn-primary" onclick="window.challenge.boot()">Boot a instance</button>
-        </div>
+        <div id="whale-panel" style="width: 100%;"></div>
     </div>
-{% endblock %}
-
-{% block input %}
-    <input id="challenge-id" class="challenge-id" type="hidden" value="{{ challenge.id }}">
-    <input id="challenge-input" class="challenge-input" type="text" name="answer" placeholder="Flag"/>
-{% endblock %}
-
-{% block submit %}
-    <button id="challenge-submit" class="challenge-submit" type="submit">
-        Submit
-    </button>
 {% endblock %}
