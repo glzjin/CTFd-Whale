@@ -1,3 +1,9 @@
+此分支已不再维护，如需继续使用请参考 [https://github.com/frankli0324/ctfd-whale](https://github.com/frankli0324/ctfd-whale) 。
+此分支已不再维护，如需继续使用请参考 [https://github.com/frankli0324/ctfd-whale](https://github.com/frankli0324/ctfd-whale) 。
+此分支已不再维护，如需继续使用请参考 [https://github.com/frankli0324/ctfd-whale](https://github.com/frankli0324/ctfd-whale) 。
+
+:)
+
 # CTFd-Whale
 A plugin for CTFd which allow your users to launch a standalone instance for challenges.
 
